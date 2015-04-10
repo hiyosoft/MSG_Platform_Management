@@ -1,0 +1,195 @@
+package com.rivues.web.handler.manage;
+
+import java.util.Date;
+import java.util.regex.*;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.rivues.web.handler.Handler;
+import com.rivues.web.handler.RequestData;
+import com.rivues.web.handler.ResponseData;
+import com.rivues.web.model.KWCheckCategory;
+import com.rivues.web.model.Keyword;
+import com.rivues.web.model.KeywordCheck;
+
+@Controller
+@SessionAttributes
+@RequestMapping(value = "/{orgi}")
+public class KeywordCheckHandler  extends Handler{
+
+	@RequestMapping(value = "/kwcheck/add/{cateid}")
+    public ModelAndView keywordadd(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String cateid, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/add" ,"/pages/include/iframeindex" ) ; 
+		ModelAndView view = request(responseData, orgi , data);
+		view.addObject("cateid", cateid);
+		return view ;
+    }
+	@RequestMapping(value = "/kwcheckcategory/add")
+    public ModelAndView kwcheckcategoryadd(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/addcategory","/pages/include/iframeindex" ) ; 
+		return request(responseData, orgi , data) ;
+    }
+	@RequestMapping(value = "/kwcheck/catelist")
+    public ModelAndView catelist(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/categorylist"  ) ;
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KWCheckCategory.class).add(Restrictions.eq("orgi", orgi))));
+		return request(responseData, orgi , data) ; 
+    }
+	@RequestMapping(value = "/kwcheck/changetype/{cateid}")
+    public ModelAndView changetype(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String cateid, @ModelAttribute("data") KWCheckCategory data ,@ModelAttribute("rqdata")RequestData rqdata) {
+		ResponseData responseData = new ResponseData(cateid,"/pages/manage/kwcheck/tablelist"  ) ;
+		responseData.setResult(cateid);
+		rqdata.setPs(PAGE_SIZE_HA);
+		responseData.setRqdata(rqdata);
+		responseData.setDataList(super.getService().findPageByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.eq("category", cateid))),rqdata.getPs(),rqdata.getP()));
+		return request(responseData, orgi , null) ; 
+    }
+	
+	@RequestMapping(value = "/kwcheckcategory/adddo")
+    public ModelAndView keywordcategoryadddo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") KWCheckCategory data) {
+		data.setCreatetime(new Date());
+		data.setOrgi(orgi);
+		super.getService().saveIObject(data);
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/tablelist"  ) ;
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KWCheckCategory.class).add(Restrictions.eq("orgi", orgi))));
+		return request(responseData, orgi , null) ; 
+		 
+    }
+	
+	@RequestMapping(value = "/kwcheckcategory/edit/{keywordcateid}")
+    public ModelAndView keywordcategoryedit(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String keywordcateid, @ModelAttribute("data") KWCheckCategory data) {
+		data.setId(keywordcateid);
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/editcategory","/pages/include/iframeindex");
+		responseData.setData(super.getService().getIObjectByPK(KWCheckCategory.class, keywordcateid));
+		return request(responseData, orgi , null) ; 
+    }
+	@RequestMapping(value = "/kwcheckcategory/edit/editdo")
+    public ModelAndView keywordcategoryeditdo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") KWCheckCategory data) {
+		super.getService().updateIObject(data);
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/tablelist"  ) ;
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KWCheckCategory.class).add(Restrictions.eq("orgi", orgi))));
+		return request(responseData, orgi , null) ; 
+    }
+	
+	@RequestMapping(value = "/kwcheckcate/rm/{keywordcateid}")
+    public ModelAndView keywordcateidrm(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String keywordcateid, @ModelAttribute("data") KWCheckCategory data) {
+		data.setId(keywordcateid);
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/categorylist");
+		if(super.getService().findAllByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.eq("category", keywordcateid)))).size()>0){
+			responseData.setMessage("请先删除关键词后再删除分类！");
+			responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KWCheckCategory.class).add(Restrictions.eq("orgi", orgi))));
+		}else{
+			super.getService().deleteIObject(data) ;
+			responseData.setMessage("删除成功");
+			responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KWCheckCategory.class).add(Restrictions.eq("orgi", orgi))));
+		}
+		return request(responseData, orgi , null) ; 
+    }
+	
+	@RequestMapping(value = "/kwcheck/adddo")
+    public ModelAndView keywordadddo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") KeywordCheck data) {
+		String [] keys = data.getKeyword().split(";|；");
+		int successcount=0,errcount =0;
+		if(keys.length>0){
+			Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+            Matcher m = null;
+            String last=null;
+			for(String key :keys){
+				m=p.matcher(key);
+				last=m.replaceAll("");
+				if(super.getService().getCountByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.eq("keyword",last )))>0){
+					errcount++;
+			        continue;
+				}else{
+					data.setCreatetime(new Date());
+					data.setOrgi(orgi);
+					data.setKeyword(last);
+					data.setCategory(data.getCategory());
+					super.getService().saveIObject(data);
+					successcount++;
+				}
+			}
+		}else{
+			data.setCreatetime(new Date());
+			data.setOrgi(orgi);
+			data.setCategory(data.getCategory());
+			super.getService().saveIObject(data);
+			successcount++;
+		}
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		responseData.setMessage("成功："+successcount+"条，失败："+errcount+"！");
+		responseData.setResult(data.getCategory());
+		responseData.setDataList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.eq("category", data.getCategory())))));
+		return request(responseData, orgi ,null) ;  
+		 
+    }
+	@RequestMapping(value = "/kwcheck/eidt/{keywordid}")
+    public ModelAndView keywordeidt(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String keywordid, @ModelAttribute("data") KeywordCheck data) {
+		data.setId(keywordid);
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/eidt");
+		responseData.setData(super.getService().findAllByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.eq("id", keywordid))));
+		return request(responseData, orgi , null ) ; 
+    }
+	@RequestMapping(value = "/kwcheck/editdo")
+    public ModelAndView editdo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") KeywordCheck data) {
+		super.getService().updateIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		responseData.setDataList(super.getService().findAllByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.eq("orgi", orgi))));
+		return request(responseData, orgi , null) ; 
+    }
+	
+	@RequestMapping(value = "/kwcheck/tablelist/{cateid}")
+    public ModelAndView tablelist(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String cateid, @ModelAttribute("rqdata") KeywordCheck data,@ModelAttribute("data") RequestData rqdata) {
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/tablelist"  ) ;
+		rqdata.setPs(PAGE_SIZE_HA);
+		String search=request.getParameter("keyword");
+		search=search==null?"":search;
+		responseData.setRqdata(rqdata);
+		responseData.setDataList(super.getService().findPageByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.and(Restrictions.eq("category", cateid), Restrictions.like("keyword", "%"+search+"%")))),rqdata.getPs(),rqdata.getP()));
+		responseData.setResult(cateid);
+		return request(responseData, orgi , rqdata) ; 
+    }
+	
+	@RequestMapping(value = "/kwcheck/rm/{cateid}/{keywordid}")
+    public ModelAndView keywordrm(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String cateid, @PathVariable String keywordid, @ModelAttribute("data") KeywordCheck data,@ModelAttribute("rqdata") RequestData rqdata) {
+		data.setId(keywordid);
+		super.getService().deleteIObject(data) ;
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/tablelist");
+		responseData.setResult(cateid);
+		rqdata.setPs(PAGE_SIZE_HA);
+		responseData.setRqdata(rqdata);
+		responseData.setDataList(super.getService().findPageByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.eq("category", cateid))),rqdata.getPs(),rqdata.getP()));
+		
+		return request(responseData, orgi , rqdata) ; 
+    }
+	
+	
+	
+	@RequestMapping(value = "/kwcheck/search")
+    public ModelAndView search(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") KeywordCheck data,@ModelAttribute("rqdata") RequestData rqdata) {
+		String key="%"+data.getKeyword()+"%";
+		ResponseData responseData = new ResponseData("/pages/manage/kwcheck/tablelist");
+		rqdata.setPs(PAGE_SIZE_HA);
+		String cateid = request.getParameter("cataid");
+		responseData.setResult(cateid);
+		if(cateid!=null && !"".equals(cateid)){
+			responseData.setDataList(super.getService().findPageByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.like("keyword", key))).add(Restrictions.eq("category", cateid)),rqdata.getPs(),rqdata.getP()));
+		}else{
+			responseData.setDataList(super.getService().findPageByCriteria(DetachedCriteria.forClass(KeywordCheck.class).add(Restrictions.and(Restrictions.eq("orgi", orgi) ,Restrictions.like("keyword", key))),rqdata.getPs(),rqdata.getP()));
+		}
+		return request(responseData, orgi , null) ; 
+    }
+	
+	
+	
+
+}

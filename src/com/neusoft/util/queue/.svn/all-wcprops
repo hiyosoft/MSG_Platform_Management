@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/sinosig/!svn/ver/1018/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/queue
+END
+AgentStatus.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/973/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/queue/AgentStatus.java
+END
+ServiceQueue.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/sinosig/!svn/ver/1018/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/queue/ServiceQueue.java
+END
+AgentQueueMessage.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/queue/AgentQueueMessage.java
+END
+AgentUser.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/sinosig/!svn/ver/988/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/queue/AgentUser.java
+END

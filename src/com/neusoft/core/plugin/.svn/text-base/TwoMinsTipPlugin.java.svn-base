@@ -1,0 +1,37 @@
+package com.rivues.core.plugin;
+
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Restrictions;
+
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.SmcRivuDataContext;
+import com.rivues.core.channel.Channel;
+import com.rivues.util.queue.AgentUser;
+import com.rivues.web.model.Instruction;
+import com.rivues.web.model.SearchResultTemplet;
+
+public class TwoMinsTipPlugin implements InstructPluginInterface{
+	/**
+	 * 测试用，消息 拼出来的
+	 * @param user
+	 * @param orgi
+	 * @return
+	 */
+	public String getMessage(Instruction instruct ,AgentUser user , String orgi , Channel channel){
+		StringBuffer strb = new StringBuffer() ;
+		SearchResultTemplet srt=(SearchResultTemplet) (RivuDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(SearchResultTemplet.class).add(Restrictions.eq("code", getCode()))).get(0));
+		strb.append(srt.getTemplettext());
+		return strb.toString();
+	}
+	@Override
+	public String getCode() {
+		// TODO Auto-generated method stub
+		return SmcRivuDataContext.TemplateCodeEnum.TWOMINSTIP.toString();
+	}
+	@Override
+	public void initVirInstruct(String orgi , Instruction instruct){
+		// TODO Auto-generated method stub
+		
+	}
+}

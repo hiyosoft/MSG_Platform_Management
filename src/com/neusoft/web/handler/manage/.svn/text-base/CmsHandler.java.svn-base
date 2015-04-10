@@ -1,0 +1,277 @@
+package com.rivues.web.handler.manage;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.rivu.web.model.ExtensionPoints;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.SmcRivuDataContext;
+import com.rivues.core.api.APIContext;
+import com.rivues.util.EapTools;
+import com.rivues.util.rpc.message.Message;
+import com.rivues.util.rpc.message.SystemMessage;
+import com.rivues.web.handler.Handler;
+import com.rivues.web.handler.RequestData;
+import com.rivues.web.handler.ResponseData;
+import com.rivues.web.model.AgentInfo;
+import com.rivues.web.model.AgentSkill;
+import com.rivues.web.model.FAQModel;
+import com.rivues.web.model.IfaceCategory;
+import com.rivues.web.model.IfaceInfo;
+import com.rivues.web.model.PageTemplate;
+import com.rivues.web.model.PageType;
+import com.rivues.web.model.UserTemplet;
+
+
+@Controller
+@SessionAttributes
+@RequestMapping(value = "/{orgi}/cms")
+@SuppressWarnings("unchecked")
+public class CmsHandler extends Handler {
+
+	@RequestMapping(value = "/tablelist/{channel}")
+	public ModelAndView tablelist(HttpServletRequest request, @PathVariable String orgi, @PathVariable String channel,
+			@ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData(null,"/pages/manage/cms/tablelist",super.getService().findPageByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.and(Restrictions.eq("orgi", orgi),Restrictions.eq("parentid", channel))).addOrder(Order.asc("code")),  data.getPs(),data.getP()));
+		ModelAndView view = request(responseData, orgi, data);
+		view.addObject("t", channel) ;
+		view.addObject("setting" , SmcRivuDataContext.getSearchSetting(orgi)) ;
+		return view ;
+	}
+
+
+
+	@RequestMapping(value = "/add/page/{channel}")
+	public ModelAndView add(HttpServletRequest request, @PathVariable String orgi,@PathVariable String channel,
+			@ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/add", "/pages/include/iframeindex");
+		responseData.setDataList(SmcRivuDataContext.getUserTempletList(RivuDataContext.getDefaultSiteTemplet(orgi) , orgi));
+		ModelAndView view = request(responseData, orgi, data);
+		view.addObject("parentid", channel==null || channel.trim().length()==0 ? "0" : channel);
+		return view;
+	}
+
+	@RequestMapping(value = "/adddo/page")
+	public ModelAndView adddo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") PageTemplate data) {
+		List<PageTemplate> list = super.getService().findAllByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.eq("parentid", data.getParentid())).add(Restrictions.and(Restrictions.eq("orgi", orgi),Restrictions.eq("code", data.getCode()))));
+		if(list!=null&&list.size()<1){
+			data.setOrgi(orgi);
+			super.getService().saveIObject(data);
+		}else{
+			return request(new ResponseData("redirect://tablelist/"+data.getParentid()+".html" , "代码 "+data.getCode()+" 已存在，请重新输入" , true , null), orgi, null) ;
+		}
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+	@RequestMapping(value = "/cmstype/add")
+	public ModelAndView cmstypeadd(HttpServletRequest request, @PathVariable String orgi,@ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/cmstypeadd", "/pages/include/iframeindex");
+		ModelAndView view = request(responseData, orgi, data);
+		view.addObject("t", "0");
+		return view;
+	}
+
+	@RequestMapping(value = "/cmstype/adddo")
+	public ModelAndView cmstypeadddo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") PageType data) {
+		super.getService().saveIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+	@RequestMapping(value = "/cmstype/edit/{cmstypeid}")
+	public ModelAndView cmstypeedit(HttpServletRequest request, @PathVariable String orgi, @PathVariable String cmstypeid,@ModelAttribute("data") PageType data) {
+		PageType ptype=(PageType) super.getService().getIObjectByPK(PageType.class, cmstypeid);
+		ResponseData responseData = new ResponseData("/pages/manage/cms/cmstypedit", "/pages/include/iframeindex");
+		responseData.setData(ptype);
+		return request(responseData, orgi, null);
+	}
+
+	@RequestMapping(value = "/cmstype/editdo")
+	public ModelAndView cmstypeeditdo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") PageType data) {
+		super.getService().updateIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+	@RequestMapping(value = "/cmstype/tablelist")
+	public ModelAndView cmstypelist(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/cmstypelist");
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(PageType.class).add(Restrictions.eq("orgi", orgi)).addOrder(Order.desc("name"))));
+		return request(responseData, orgi, null);
+	}
+	@RequestMapping(value = "/cmstype/rm/{cmstypeid}")
+	public ModelAndView cmstyperm(HttpServletRequest request, @PathVariable String orgi,@PathVariable String cmstypeid, @ModelAttribute("data") PageType data) {
+		data.setId(cmstypeid);
+		//判断要删除分类下是否有坐席数据
+		List<PageTemplate> list=super.getService().findAllByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.and(Restrictions.eq("orgi", orgi), Restrictions.eq("parentid", cmstypeid))));
+		ResponseData responseData = new ResponseData("/pages/manage/cms/cmstypelist");
+		if(list!=null&&list.size()>0){
+			responseData.setMessage("请先删除该分类下的网页内容再删除分类");
+		}else{
+			responseData.setMessage("删除成功");
+			super.getService().deleteIObject(data);
+		}
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(PageType.class).add(Restrictions.eq("orgi", orgi)).addOrder(Order.desc("name"))));
+		return request(responseData, orgi, null);
+	}
+	@RequestMapping(value = "/rm/{channel}/{templateid}")
+	public ModelAndView rm(HttpServletRequest request, @PathVariable String orgi, @PathVariable String channel,@PathVariable String templateid,
+			@ModelAttribute("data") PageTemplate data) {
+		data.setId(templateid);
+		// 执行数据库删除操作
+		super.getService().deleteIObject(data);
+		ResponseData responseData = new ResponseData(null,"/pages/manage/cms/tablelist",super.getService().findPageByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.and(Restrictions.eq("orgi", orgi),Restrictions.eq("parentid", channel))).addOrder(Order.asc("code"))));
+		ModelAndView view = request(responseData, orgi, null);
+		view.addObject("t", channel) ;
+		view.addObject("setting" , SmcRivuDataContext.getSearchSetting(orgi)) ;
+		return view;
+	}
+
+	@RequestMapping(value = "/edit/{templateid}")
+	public ModelAndView eidt(HttpServletRequest request, @PathVariable String orgi, @PathVariable String templateid,
+			@ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/edit", "/pages/include/iframeindex");
+		responseData.setData(super.getService().getIObjectByPK(PageTemplate.class, templateid));
+		responseData.setDataList(SmcRivuDataContext.getUserTempletList(RivuDataContext.getDefaultSiteTemplet(orgi) , orgi));
+		responseData.setValueList(super.getService().findAllByCriteria(DetachedCriteria.forClass(PageType.class).add(Restrictions.eq("orgi", orgi))));
+		return request(responseData, orgi, data);
+	}
+	
+	@RequestMapping(value = "/codeedit/{templateid}")
+	public ModelAndView codeedit(HttpServletRequest request, @PathVariable String orgi, @PathVariable String templateid,
+			@ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/codeedit", "/pages/include/iframeindex");
+		responseData.setData(super.getService().getIObjectByPK(PageTemplate.class, templateid));
+		return request(responseData, orgi, data);
+	}
+	
+	@RequestMapping(value = "/codeeditdo")
+	public ModelAndView codeeditdo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") PageTemplate data) {
+		PageTemplate page = (PageTemplate) super.getService().getIObjectByPK(PageTemplate.class, data.getId()) ;
+		page.setTemplatetext(data.getTemplatetext()) ;
+		data = page ;
+		super.getService().updateIObject(page);
+		
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+	
+	@RequestMapping(value = "/editdo")
+	public ModelAndView editdo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") PageTemplate data) {
+		List<PageTemplate> list=super.getService().findAllByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.eq("parentid", data.getParentid())).add(Restrictions.and(Restrictions.eq("orgi", orgi),Restrictions.eq("code", data.getCode()))));
+		if((list.size()==0)||(list!=null&&list.size()>0&&list.get(0).getId().equals(data.getId()))){
+			if(list.size()>0){
+				PageTemplate pageTemplet = list.get(0) ;
+				data.setTemplatetext(pageTemplet.getTemplatetext()) ;
+			}
+			super.getService().updateIObject(data);
+		}else{
+			return request(new ResponseData("redirect://tablelist/"+data.getParentid()+".html" , "代码 "+data.getCode()+" 已存在，请重新输入" , true , null), orgi, null) ;
+		}
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+	
+	@RequestMapping(value = "/publish")
+	public ModelAndView publish(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("redirect:/"+orgi+"/cms/tablelist/0.html");
+		List<PageTemplate> list = super.getService().findAllByCriteria(DetachedCriteria.forClass(PageTemplate.class).add(Restrictions.eq("orgi", orgi)));
+		
+		for(PageTemplate item: list){
+			UserTemplet templet  = null ;
+			//item.setSetting(SmcRivuDataContext.getSearchSetting(orgi));
+			if(item.getDatamodel()==null || item.getDatamodel().length()>0){
+				for(UserTemplet tp : SmcRivuDataContext.getUserTempletList(RivuDataContext.getDefaultSiteTemplet(orgi) , orgi)){
+					if(tp.getId().equals(item.getDatamodel())){
+						templet = tp ;
+						break ;
+					}
+				}
+			}
+			try {
+				if(templet!=null){
+					Map<String , Object> values = new HashMap<String , Object>() ;
+					if(item.getTemplatetext()==null){
+						item.setTemplatetext("") ;
+					}
+					values.put("item", item) ;
+					values.put("orgi", item.getOrgi()) ;
+	
+					item.setHtml(EapTools.getTemplet(templet, values).getBytes("UTF-8")) ;
+
+				}else{
+					if(item.getTemplatetext()!=null){
+						item.setHtml(item.getTemplatetext().getBytes("UTF-8")) ;
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		try {
+			if(APIContext.getRpcServers().size()>0){
+				APIContext.getRpcServer().sendMessageToServer(
+					new Message(RivuDataContext.HANDLER, JSON.toJSONString(new SystemMessage(RivuDataContext.SystemRPComman.SITEPUBLISH.toString(), list), SerializerFeature.WriteClassName)));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		return request(responseData, orgi, data);
+	}
+	@RequestMapping(value = "/chooseiface/{cmsid}")
+	public ModelAndView chooseiface(HttpServletRequest request, @PathVariable String orgi, @PathVariable String cmsid) {
+		ResponseData responseData = new ResponseData("/pages/manage/cms/chooseiface", "/pages/include/iframeindex");
+		ModelAndView view = request(responseData, orgi, null);
+		List<IfaceCategory> list=super.getService().findAllByCriteria(DetachedCriteria.forClass(IfaceCategory.class).add(Restrictions.eq("orgi", orgi)));
+		List<List<IfaceInfo>> ifacelist=new ArrayList<List<IfaceInfo>>();
+		if(list!=null && list.size()>0){
+			for (int i = 0; i < list.size();i++) {
+				ifacelist.add(super.getService().findAllByCriteria(DetachedCriteria.forClass(IfaceInfo.class).add(Restrictions.and(Restrictions.eq("orgi", orgi), Restrictions.eq("cateid", list.get(i).getId())))));
+			}
+			view.addObject("ifacecates",list);
+			if(list.get(0)!=null){
+				view.addObject("allifacelist",ifacelist);
+			}
+			//如果为修改，则勾选住之前选择过得
+			if(cmsid!=null && !"0".equals(cmsid)){
+				view.addObject("cmsinfo",super.getService().getIObjectByPK(PageTemplate.class, cmsid));
+			}
+		}
+		return view;
+	}
+	@RequestMapping(value = "/chooseifacedo")
+	public ModelAndView chooseifacedo(HttpServletRequest request, @PathVariable String orgi, @PathVariable String cmsid) {
+		ResponseData responseData = new ResponseData("redirect://cms/add.html" , "选择成功" , true , null);
+		ModelAndView view = request(responseData, orgi, null);
+		return view;
+	}
+	@RequestMapping(value = "/addifaces/{cmsid}")
+	public ModelAndView addifaces(HttpServletRequest request, @PathVariable String orgi, @PathVariable String cmsid) {
+		ResponseData responseData = new ResponseData("/pages/manage/iface/ifaceadd", "/pages/include/iframeindex");
+		PageTemplate pgtemplate=(PageTemplate) super.getService().getIObjectByPK(PageTemplate.class, cmsid);
+		return request(responseData, orgi, null);
+	}
+}

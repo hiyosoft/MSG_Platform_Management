@@ -1,0 +1,9 @@
+package com.neusoft.util.process;
+
+import java.security.PrivateKey;
+import java.security.PublicKey;
+
+public interface Signer {
+	public String sign(byte[] data, PrivateKey priKey);
+	public boolean verify(byte[] data, String sign, PublicKey pubKey);
+}

@@ -1,0 +1,406 @@
+package com.neusoft.core.plugin;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.apache.tools.zip.ZipEntry;
+import org.apache.tools.zip.ZipOutputStream;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.util.FileCopyUtils;
+
+import com.neusoft.core.EapDataContext;
+import com.neusoft.core.EapSmcDataContext;
+import com.neusoft.core.channel.Channel;
+import com.neusoft.util.queue.AgentUser;
+import com.neusoft.web.model.Instruction;
+import com.neusoft.web.model.SinosigZLBC;
+import com.neusoft.web.model.SinosigZLBCRes;
+import com.sinosig.task.interfaces.IZLBCVariables;
+import com.sinosig.util.ChangeCharset;
+import com.sinosig.util.FileProcesser;
+/**
+ * 结束理赔资料上传，调用信雅达接口发送zip包
+ * @author Kerwin
+ *
+ */
+public class SinosigZlpcPostZipPlugin  extends Plugin{
+	
+	static Logger log = Logger.getLogger(SinosigZlpcPostZipPlugin.class);
+	final static String FOLDER_BASE = System.getProperties().getProperty("user.home").toString()+File.separator;
+	final static String FOLDER_IMAGE = FOLDER_BASE+"weixin_images";
+	
+	final static String FOLDER_ZIP =  FOLDER_BASE+"weixin_zips";
+	
+	
+	@Override
+	public String getMessage(Instruction instruct, AgentUser user, final String orgi , final Channel channel) {
+		// TODO Auto-generated method stub
+		final SinosigZLBC zlbc=EapSmcDataContext.getZlbcFromMap(orgi,channel.getSnsuser().getApiusername());
+		//把事件从缓存中移除
+		EapSmcDataContext.getZlbcMap().remove(channel.getSnsuser().getApiusername());
+		//更新系列的数据，建议单独走线程操作
+		if(zlbc!=null && zlbc.getCaseid().length()>1){
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					beforePostZip(orgi,channel.getSnsuser().getApiusername(), zlbc);
+				}
+			}).start();
+		}else{
+			instruct.setMemo("没有查询到您有需要补充资料的案件，感谢支持！");
+		}
+
+		return super.getChannelMessage(instruct, instruct!= null? instruct.getMemo(): null , user, orgi, channel);
+	}
+
+	@Override
+	public String getCode() {
+		// TODO Auto-generated method stub
+		return "";
+	}
+
+	@Override
+	public void initVirInstruct(String orgi , Instruction instruct){
+		// TODO Auto-generated method stub
+		
+	}
+	/**
+	 * 创建存放的目录
+	 */
+	static
+	{
+		
+		File imageDic = new File(FOLDER_IMAGE);
+		
+		File zipDic = new File(FOLDER_ZIP);
+		
+		if(!imageDic.exists())
+		{
+			imageDic.mkdir();
+		}
+		
+		if(!zipDic.exists())
+			zipDic.mkdir();
+	}
+	private void beforePostZip(String orgi,String apiusername,SinosigZLBC zlbc){
+//		SinosigZLBC zlbc=SmcRivuDataContext.getZlbcFromMap(orgi,apiusername);
+		//更新系列的数据，建议单独走线程操作
+		if(zlbc!=null && zlbc.getCaseid().length()>1){
+			//获取到所有图片
+			List<SinosigZLBCRes> reses=EapDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(SinosigZLBCRes.class).add(Restrictions.and(Restrictions.eq("orgi", orgi), Restrictions.eq("zlbcid", zlbc.getId()))).add(Restrictions.eq("restype", 1)));
+			for (int i=0;i<reses.size();i++) {
+				//TODO:还需要拼zip包中的page节点xml内容
+				SinosigZLBCRes zLBCRes=reses.get(i);
+				try {
+					File imgfolder=new File(FOLDER_IMAGE+File.separator+zlbc.getZipfile());
+					if(!imgfolder.exists()){
+						imgfolder.mkdir();
+					}
+					File imgfile=new File(FOLDER_IMAGE+File.separator+zlbc.getZipfile()+File.separator+i+".jpg");
+					if(!imgfile.exists()){
+						FileCopyUtils.copy(zLBCRes.getImage(),imgfile);
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			
+			if(reses!=null && reses.size()>0){
+				//保存事件的xml文件
+				SinosigZLBCRes res=new SinosigZLBCRes();
+				res.setCaseid(zlbc.getCaseid());
+				res.setOrgi(orgi);
+				res.setRestype(2);
+				res.setZlbcid(zlbc.getId());
+				
+				try 
+				{
+					String zlbcxml=buildXmlToFolder(zlbc,reses);
+					EapDataContext.getLogger(SinosigZlpcPostZipPlugin.class).info("封装上传信雅达的xml:"+zlbcxml);
+					res.setImage(zlbcxml.getBytes());
+					EapDataContext.getService().saveIObject(res);
+					
+					ChangeCharset cc = new ChangeCharset();
+					
+					String filePath = writeFile(FOLDER_IMAGE+File.separator+zlbc.getZipfile()+File.separator,"busi.xml",new String(zlbcxml.getBytes(),"UTF-8"));
+					//String filePath = writeFile(FOLDER_IMAGE+File.separator+zlbc.getZipfile()+File.separator,"busi.xml",cc.toUTF_8(zlbcxml.gey));
+					
+//					String filePath = writeFile(FOLDER_IMAGE+File.separator+zlbc.getZipfile()+File.separator,"busi.xml",zlbcxml);
+					
+					log.info(filePath);
+					
+				} 
+				catch (Exception e) 
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//生成zip包文件
+				zip(FOLDER_IMAGE+File.separator+zlbc.getZipfile(),FOLDER_ZIP+File.separator+zlbc.getZipfile()+".zip");
+				//TODO:发送zip包，建议单独起一个线程执行该段逻辑
+				postZip(zlbc);
+			}
+		}
+	}
+	public static void postZip(SinosigZLBC zlbc){
+		String msg=null;
+		try
+		{
+			msg=EapSmcDataContext.sendZip(FOLDER_ZIP+File.separator+zlbc.getZipfile()+".zip", IZLBCVariables.URL_UPLOAD_IMAGES_ADDRESS);//SmcRivuDataContext.sendZip("C:\\Users\\Victor\\weixin_zips\\C021105082014800138_1392791643333.zip", IZLBCVariables.URL_UPLOAD_IMAGES_ADDRESS);//
+			
+			if(msg!=null && msg.indexOf("<PRE_RET_CODE>200</PRE_RET_CODE>")>0){
+				
+				log.info("操作完成，更新状态");
+				//更新事件的状态为上传成功
+				zlbc.setStatus(1);
+				EapDataContext.getService().updateIObject(zlbc);
+				
+				
+				log.info("操作完成，更新状态完成");
+				
+				String deleteFolderPath = FOLDER_IMAGE+File.separator+zlbc.getZipfile();
+				
+				String deleteZipFilePath = FOLDER_ZIP+File.separator+zlbc.getZipfile()+".zip";
+
+				log.info("清理临时文件夹 ："+deleteFolderPath);
+				
+				boolean isDelete=FileProcesser.deleteFolder(deleteFolderPath);
+				
+				log.info(deleteFolderPath +" 是否已清理 : "+isDelete);
+				
+				
+				log.info("清理已上传成功的文件 :"+deleteZipFilePath);
+				
+				boolean isDelZip = FileProcesser.deleteFile(deleteZipFilePath);
+				
+				log.info(deleteZipFilePath+" 是否已删除 ："+isDelZip);
+				
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			//更新事件的状态为上传失败
+			zlbc.setStatus(2);
+			EapDataContext.getService().updateIObject(zlbc);
+			e.printStackTrace();
+		}
+		
+	}
+	public static String buildXmlToFolder(SinosigZLBC zlbc,List<SinosigZLBCRes> zlbcreses){
+		StringBuffer sb=new StringBuffer();
+		if(zlbc!=null && zlbcreses!=null && zlbcreses.size()>0){
+			sb.append("<?xml version='1.0'  encoding='UTF-8'?>");
+			sb.append("<ROOT><BASE_DATA>").append("<APP_TYPE>2</APP_TYPE>");
+			sb.append("<ORG_NUM>").append(zlbc.getOrgnum()).append("</ORG_NUM>");
+			sb.append("<COM_CODE>").append(zlbc.getComcode()).append("</COM_CODE>");
+			sb.append("<OP_ID>").append(zlbc.getOpid()).append("</OP_ID>");
+			sb.append("<OP_USER>").append(zlbc.getOpuser()).append("</OP_USER>");
+			sb.append("</BASE_DATA><META_DATAS><META_DATA>");
+			sb.append("<APP_CODE>CCLAIM</APP_CODE>");
+			sb.append("<CASE_NO>").append(zlbc.getCaseid()).append("</CASE_NO>");
+			sb.append("<TREE_VIEW><TREE_NODE name='闪赔类单证' id='quickclaim_bill' resize='800*600'>");
+//			sb.append("<TREE_VIEW><TREE_NODE name='quickclaim' id='quickclaim_bill' resize='800*600'>");
+			sb.append("<TREE_NODE name= '闪赔案件类' id= 'S' resize='800*600'><TREE_NODE name='闪赔案件单证' id='SP04' maxpages='1000' resize='800*600'>");
+//			sb.append("<TREE_NODE name= 'quick' id= 'S' resize='800*600'><TREE_NODE name='quickbill' id='SP04' maxpages='1000' resize='800*600'>");
+			for (int i=0;i<zlbcreses.size();i++) {
+				sb.append("<PAGE fileName='").append(i).append(".jpg' remark='' create_user='").append(zlbc.getOpid()).append("' is_ps='0' create_time='").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).append("' />");
+			}
+			sb.append("</TREE_NODE></TREE_NODE></TREE_NODE></TREE_VIEW></META_DATA></META_DATAS></ROOT>");
+		}
+		log.info(sb.toString());
+		
+		return sb.toString();
+	}
+	/**
+	 * 功能：把 sourceDir 目录下的所有文件进行 zip 格式的压缩，保存为指定 zip 文件 
+	 * @param sourceDir
+	 * @param zipFile
+	 */
+	public static File zip(String sourceDir, String zipFile) {
+	       OutputStream os;
+	       File file =null;
+	       try {
+	           os = new FileOutputStream(zipFile);
+	           BufferedOutputStream bos = new BufferedOutputStream(os);
+	           ZipOutputStream zos = new ZipOutputStream(bos);
+	 
+	           file = new File(sourceDir);
+	 
+	           String basePath = null ;
+	           if (file.isDirectory()) {
+	              basePath = file.getPath();
+	           } else {
+	              basePath = file.getParent();
+	           }
+	 
+	           zipFile (file, basePath, zos);
+	 
+	           zos.closeEntry();
+	           zos.close();
+	           System.out.println("=============压缩完成============");
+	       } catch (Exception e) {
+	           // TODO Auto-generated catch block
+	           e.printStackTrace();
+	       }
+	 return file;
+	}
+	private static void zipFile(File source, String basePath,
+	           ZipOutputStream zos) {
+	       File[] files = new File[0];
+	 
+	       if (source.isDirectory()) {
+	           files = source.listFiles();
+	       } else {
+	           files = new File[1];
+	           files[0] = source;
+	       }
+	 
+	       String pathName;
+	       byte [] buf = new byte [1024];
+	       int length = 0;
+	       try {
+	           for (File file : files) {
+	              if (file.isDirectory()) {
+	                  pathName = file.getPath().substring(basePath.length() + 1)
+	                         + "/" ;
+	                  zos.putNextEntry( new ZipEntry(pathName));
+	                  zipFile (file, basePath, zos);
+	              } else {
+	                  pathName = file.getPath().substring(basePath.length() + 1);
+	                  InputStream is = new FileInputStream(file);
+	                  BufferedInputStream bis = new BufferedInputStream(is);
+	                  zos.putNextEntry( new ZipEntry(pathName));
+	                  while ((length = bis.read(buf)) > 0) {
+	                     zos.write(buf, 0, length);
+	                  }
+	                  is.close();
+	              }
+	           }
+	       } catch (Exception e) {
+	           // TODO Auto-generated catch block
+	           e.printStackTrace();
+	       }
+	 
+	}
+	
+	
+	public String writeFile(String path, String fileName, String context)
+	{
+		
+		log.info("开始写入文件............................");
+		StringBuilder fileFullPath = new StringBuilder();
+
+		String filePath = path;
+
+		String saveFileName = fileName;
+
+		FileChannel fileChannel = null;
+		
+		if (filePath == null)
+		{
+			filePath = System.getProperty("java.io.tmpdir");
+
+		}
+
+		if (filePath.lastIndexOf(getFileSeparator()) + 1 == filePath.length())
+			fileFullPath.append(filePath).append(saveFileName);
+		else
+			fileFullPath.append(filePath).append(this.getFileSeparator())
+					.append(saveFileName);
+
+		try
+		{
+			File writeFile = new File(fileFullPath.toString());
+
+			if (writeFile.exists() && writeFile.canRead()
+					&& writeFile.canWrite())
+			{
+				fileChannel = new RandomAccessFile(fileFullPath.toString(),"rw").getChannel();
+				fileChannel.position(fileChannel.size());
+			}
+			else
+			{
+				fileChannel = new FileOutputStream(fileFullPath.toString())	.getChannel();
+			}
+
+			fileChannel.write(ByteBuffer.wrap(context.getBytes()));
+
+		}
+		catch (FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException io)
+		{
+			io.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (fileChannel != null)
+					fileChannel.close();
+				
+			}
+			catch (IOException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		log.info("文件写入完成............................");
+		
+		return fileFullPath.toString();
+
+	}
+	
+	public String getFileSeparator()
+	{
+		return System.getProperty("file.separator");
+	}
+	
+	public static void main(String[] args) {
+		//把e:/test/testzip/下的所有文件，压缩成目标路径的zip包
+		//zip("e:/test/testzip","e:/test/abc.zip");
+		SinosigZlpcPostZipPlugin plugin = new SinosigZlpcPostZipPlugin();
+		
+//		String content="<?xml version='1.0'  encoding='UTF-8'?><ROOT><BASE_DATA><APP_TYPE>2</APP_TYPE><ORG_NUM>01</ORG_NUM><COM_CODE>01</COM_CODE><OP_ID>01040056</OP_ID><OP_USER>孙晨</OP_USER></BASE_DATA><META_DATAS><META_DATA><APP_CODE>CCLAIM</APP_CODE><CASE_NO>C015705112009801368</CASE_NO><TREE_VIEW><TREE_NODE name='闪赔类单证' id='quickclaim_bill' resize=''><TREE_NODE name= '闪赔案件类' id= 'S' resize=''><TREE_NODE name='闪赔案件单证' id='SP04' maxpages='' resize=''><PAGE fileName='0.jpg' remark='' create_user='01040056' is_ps='0' create_time='2014-01-14 10:12:38' /></TREE_NODE></TREE_NODE></TREE_NODE></TREE_VIEW></META_DATA></META_DATAS></ROOT>";
+		
+//		plugin.writeFile("F:\\Temp","busi.xml4",content);
+		
+	try {
+		System.out.println(EapSmcDataContext.sendZip("C:\\Users\\Victor\\weixin_zips\\C021105082014800138_1392791643333.zip", IZLBCVariables.URL_UPLOAD_IMAGES_ADDRESS));//"http://10.10.163.98:9002/SunECM/servlet/UploadImage"));
+	} catch (Exception e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
+		
+//		SinosigZlpcPostZipPlugin.zip("F:\\Temp\\C015705112009801368_1389668415855.zip","f:\\Temp\\1234Test.zip");
+//		SmcRivuDataContext.sendZip("f:\\Temp\\1234Test.zip", "http://10.10.163.98:9002/SunECM/servlet/UploadImage");
+//		zip("C:/Users/Kerwin/weixin_images/C021105082013800320_1389063391294/",FOLDER_ZIP+File.separator+"C021105082013800320_1389063391294/abc.zip");
+//		SmcRivuDataContext.sendZip(FOLDER_ZIP+File.separator+"C021105082013800320_1389063391294-jun-me.zip", "http://10.10.163.98:9002/SunECM/servlet/UploadImage");
+		
+		
+		
+	}
+}

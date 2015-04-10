@@ -1,0 +1,28 @@
+package com.rivues.core.plugin;
+
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.channel.Channel;
+import com.rivues.util.queue.AgentUser;
+import com.rivues.web.model.Instruction;
+
+public class TipNewsMessagePlugin  implements InstructPluginInterface{
+
+	@Override
+	public String getMessage(Instruction instruct, AgentUser user, String orgi , Channel channel) {
+		// TODO Auto-generated method stub
+		return instruct!= null? RivuDataContext.MessageType.NEWS.toString()+":"+instruct.getMemo(): null ;
+	}
+
+	@Override
+	public String getCode() {
+		// TODO Auto-generated method stub
+		return "TIP_NEWS_INSTRUCT";
+	}
+
+	@Override
+	public void initVirInstruct(String orgi , Instruction instruct){
+		// TODO Auto-generated method stub
+		
+	}
+
+}

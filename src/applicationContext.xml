@@ -1,0 +1,183 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/task  http://www.springframework.org/schema/task/spring-task-3.0.xsd  "
+	default-autowire="byName">
+	<tx:annotation-driven />
+
+	<!-- support @AspectJ tag -->
+	<aop:aspectj-autoproxy />
+
+    <task:annotation-driven/>  
+    
+    <context:annotation-config/>
+    <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
+    <context:component-scan base-package="com.sinosig.task"/>
+
+	<bean id="exceptionHandler" class="com.neusoft.web.interceptor.ExceptionHandler" />
+
+	<tx:advice id="txAdvice">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="find*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="pagedQuery*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="load*" read-only="true" propagation="NOT_SUPPORTED" />
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- --> 
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="preferredTestQuery" value="select 1" />  
+   		<property name="idleConnectionTestPeriod" value="18000" />  
+    	<property name="testConnectionOnCheckout" value="true" /> 
+    	<property name="maxIdleTime" value="25200" /> 
+
+		<property name="driverClass" value="com.mysql.jdbc.Driver" />
+
+		<property name="jdbcUrl"
+			value="jdbc:mysql://localhost:3306/SNS_PLATFORM?useUnicode=true&amp;characterEncoding=UTF-8" />
+		<property name="user" value="root" />
+		<property name="password" value="123456" />
+	</bean>
+	<!-- 
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="jdbcUrl" value="jdbc:oracle:thin:@10.10.168.21:1521:ec" />
+		<property name="user" value="ec_wx" />
+		<property name="password" value="ec_wx" />
+	</bean>
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="jdbcUrl" value="jdbc:oracle:thin:@10.10.114.190:1521:ec1" />
+		<property name="user" value="ec_wx" />
+		<property name="password" value="ec_wxygbx123" />
+	</bean> -->
+
+	<!-- sessionFactory -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<!-- <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop> -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.OracleDialect</prop>
+				<prop key="hibernate.connection.charset">UTF-8</prop>
+				<prop key="hibernate.hbm2ddl.auto">none</prop>
+				<prop key="hibernate.current_session_context_class">thread</prop>
+				<prop key="hibernate.cache.provider_class">org.hibernate.cache.EhCacheProvider
+				</prop>
+				<prop key="hibernate.query.factory_class">org.hibernate.hql.classic.ClassicQueryTranslatorFactory
+				</prop>
+				<prop key="hibernate.cache.use_query_cache">true</prop>
+				<prop key="hibernate.cache.use_second_level_cache">true</prop>
+
+				<prop key="hibernate.connection.autocommit">false</prop>
+				<prop key="hibernate.jdbc.fetch_size">20</prop>
+				<prop key="hibernate.jdbc.batch_size">50</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.use_sql_comments">false</prop>
+			</props>
+		</property>
+
+		<property name="annotatedClasses">
+			<list>
+				<value>com.neusoft.web.model.User</value>
+				<value>com.neusoft.web.model.UserGroup</value>
+				<value>com.neusoft.web.model.Database</value>
+				<value>com.neusoft.web.model.TableTask</value>
+				<value>com.neusoft.web.model.TableProperties</value>
+				<value>com.neusoft.web.model.DataDic</value>
+				<value>com.neusoft.web.model.SearchResultTemplet</value>
+				<value>com.neusoft.web.model.UserTemplet</value>
+				<value>com.neusoft.web.model.TypeCategory</value>
+				<value>com.neusoft.web.model.ModelContainer</value>
+				<value>com.neusoft.web.model.DataTableView</value>
+				<value>com.neusoft.web.model.DataTableType</value>
+				<value>com.neusoft.web.model.DataTableViewField</value>
+				<value>com.neusoft.web.model.PageType</value>
+				<value>com.neusoft.web.model.PageTemplate</value>
+				<value>com.neusoft.web.model.JobDetail</value>
+				<value>com.neusoft.web.model.TaskPlanConfigure</value>
+				<value>com.neusoft.web.model.ConfigureParam</value>
+				<value>com.neusoft.web.model.ConfigureParam</value>
+				<value>com.neusoft.web.model.HistoryJobDetail</value>
+				<value>com.neusoft.web.model.PageDataView</value>
+				<value>com.neusoft.web.model.weibo.WeiBoKeyword</value>
+				<value>com.neusoft.web.model.weibo.WeiBoUser</value>
+				<value>com.neusoft.web.model.weibo.WeiBoTopic</value>
+				<value>com.neusoft.core.channel.WeiXinUser</value>
+				<value>com.neusoft.core.channel.WeiXin</value>
+				<value>com.neusoft.web.model.Content</value>
+				<value>com.neusoft.web.model.Keyword</value>
+				<value>com.neusoft.web.model.KeywordCheck</value>
+				<value>com.neusoft.web.model.KeywordCategory</value>
+				<value>com.neusoft.web.model.KWCheckCategory</value>
+				<value>com.neusoft.core.channel.WeiXinUser</value>
+				<value>com.neusoft.core.channel.WeiXin</value>
+				<value>com.neusoft.web.model.SNSAccount</value>
+				<value>com.neusoft.core.channel.WebIM</value>
+				<value>com.neusoft.core.channel.WebIMUser</value>
+				<value>com.neusoft.util.queue.AgentUser</value>
+				<value>com.neusoft.web.model.Instruction</value>
+				<value>com.neusoft.web.model.ExtensionPoints</value>
+				<value>com.neusoft.web.model.SearchResultTemplet</value>
+				<value>com.neusoft.web.model.AgentInfo</value>
+				<value>com.neusoft.web.model.AgentSkill</value>
+				<value>com.neusoft.web.model.FAQModel</value>
+				<value>com.neusoft.web.model.SystemConfig</value>
+				<value>com.neusoft.web.model.Material</value>
+				<value>com.neusoft.web.model.EventMenu</value>
+				<value>com.neusoft.web.model.SearchSetting</value>
+				<value>com.neusoft.web.model.IfaceInfo</value>
+				<value>com.neusoft.web.model.IfaceCategory</value>
+				<value>com.neusoft.web.model.SinoLocation</value>
+				<value>com.neusoft.web.model.SinosigUser</value>
+				<value>com.neusoft.web.model.SinosigZLBC</value>
+				<value>com.neusoft.web.model.SinosigZLBCRes</value>
+				<value>com.sinosig.pay.platform.kuaiqian.model.MPurchase</value>
+				<value>com.neusoft.web.model.OptCount</value>
+				<value>com.neusoft.web.model.AgentServiceStatus</value>
+				<value>com.sinosig.staff.model.StaffWelfare</value>
+				
+				<!-- <value>com.neusoft.web.model.MaterialImage</value>
+				<value>com.neusoft.web.model.SinosigStats</value>
+				<value>com.neusoft.web.model.LogicDatabase</value>
+				<value>com.neusoft.web.model.FavMessage</value> -->
+				
+			</list>
+		</property>
+
+	</bean>
+
+	<!-- transaction manager -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<!-- 声明使用注解式事务 -->
+
+	<!--ehcache cache manager -->
+	<bean id="cacheManager"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:cache/ehcache.xml" />
+		<property name="shared" value="true" />
+	</bean>
+
+	<bean id="dao" class="com.neusoft.core.datasource.handler.IDaoManager" />
+
+	<!-- 林招远 -->
+	<bean id="dataBean" class="com.neusoft.util.persistence.DBPersistence">   
+        <property name="dataSource">   
+            <ref bean="dataSource"/>   
+        </property>   
+    </bean> 
+
+</beans>

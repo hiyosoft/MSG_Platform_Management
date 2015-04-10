@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/sinosig/!svn/ver/1034/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler
+END
+SinoLocationHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/sinosig/!svn/ver/728/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/SinoLocationHandler.java
+END
+RequestData.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/RequestData.java
+END
+UserController.java
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/sinosig/!svn/ver/1009/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/UserController.java
+END
+ResponseData.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/ResponseData.java
+END
+TempletHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/TempletHandler.java
+END
+IndexController.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/1014/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/IndexController.java
+END
+Handler.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/handler/Handler.java
+END

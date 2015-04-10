@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/sinosig/!svn/ver/972/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/persistence
+END
+Persistence.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/persistence/Persistence.java
+END
+R3Persistence.java
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/persistence/R3Persistence.java
+END
+DBPersistence.java
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/sinosig/!svn/ver/972/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/persistence/DBPersistence.java
+END
+PersistenceFactory.java
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/persistence/PersistenceFactory.java
+END

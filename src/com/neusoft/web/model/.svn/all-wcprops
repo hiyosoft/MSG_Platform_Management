@@ -1,0 +1,149 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/sinosig/!svn/ver/987/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model
+END
+SinosigZLBCRes.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/sinosig/!svn/ver/343/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SinosigZLBCRes.java
+END
+SinoLocation.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/313/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SinoLocation.java
+END
+IfaceCategory.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/IfaceCategory.java
+END
+EventMenu.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/EventMenu.java
+END
+Content.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/Content.java
+END
+AgentInfo.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/AgentInfo.java
+END
+SinosigUser.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SinosigUser.java
+END
+SystemConfig.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SystemConfig.java
+END
+OptCount.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/sinosig/!svn/ver/361/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/OptCount.java
+END
+KWCheckCategory.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/KWCheckCategory.java
+END
+User.java
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/sinosig/!svn/ver/764/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/User.java
+END
+FavMessage.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/FavMessage.java
+END
+LogicDatabase.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/LogicDatabase.java
+END
+KeywordCheck.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/KeywordCheck.java
+END
+KeywordCategory.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/KeywordCategory.java
+END
+IfaceInfo.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/IfaceInfo.java
+END
+AgentServiceStatus.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/987/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/AgentServiceStatus.java
+END
+Keyword.java
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/Keyword.java
+END
+SinosigZLBC.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/svn/sinosig/!svn/ver/430/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SinosigZLBC.java
+END
+FilterHistoryModel.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/317/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/FilterHistoryModel.java
+END
+FAQModel.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/FAQModel.java
+END
+UserGroup.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/828/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/UserGroup.java
+END
+AgentSkill.java
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/AgentSkill.java
+END
+SinosigCarReport.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/sinosig/!svn/ver/667/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/model/SinosigCarReport.java
+END

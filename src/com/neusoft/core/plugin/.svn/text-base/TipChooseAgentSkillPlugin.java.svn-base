@@ -1,0 +1,38 @@
+package com.rivues.core.plugin;
+
+import java.util.List;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Restrictions;
+
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.channel.Channel;
+import com.rivues.util.queue.AgentUser;
+import com.rivues.web.model.AgentSkill;
+import com.rivues.web.model.Instruction;
+
+public class TipChooseAgentSkillPlugin  extends Plugin{
+
+	@Override
+	public String getMessage(Instruction instruct, AgentUser user, String orgi , Channel channel) {
+		List<AgentSkill> skills = RivuDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(AgentSkill.class).add(Restrictions.eq("orgi", orgi)));
+		StringBuffer strb = new StringBuffer("请选择接入的分组：\r\n") ;
+		for (int i = 0; i < skills.size(); i++) {
+			AgentSkill as=skills.get(i);
+			strb.append("[").append(i+1).append("] ").append(as.getName()).append("\r\n");
+		}
+		return super.getChannelMessage(instruct, strb.toString(), user, orgi, channel) ;
+	}
+
+	public String getCode() {
+		// TODO Auto-generated method stub
+		return "TipChooseAgentSkillPlugin";
+	}
+
+	@Override
+	public void initVirInstruct(String orgi , Instruction instruct){
+		// TODO Auto-generated method stub
+		
+	}
+
+}

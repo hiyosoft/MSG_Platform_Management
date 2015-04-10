@@ -1,0 +1,293 @@
+package com.sinosig.staff.handler;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import jxl.Workbook;
+import jxl.format.Alignment;
+import jxl.format.VerticalAlignment;
+import jxl.write.Label;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+
+import org.apache.lucene.search.Query;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.SimpleExpression;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.channel.WeiXin;
+import com.rivues.core.channel.WeiXinUser;
+import com.rivues.web.handler.Handler;
+import com.rivues.web.handler.RequestData;
+import com.rivues.web.handler.ResponseData;
+import com.sinosig.staff.model.StaffWelfare;
+
+@Controller
+@SessionAttributes
+@RequestMapping(value = "/{orgi}/welfare")
+public class StaffWelfareHandler extends Handler {
+
+
+	@RequestMapping(value = "/tablelist")
+	public ModelAndView tablelist(HttpServletRequest request ,@PathVariable String orgi,@ModelAttribute("data") RequestData data) throws ParseException {
+		StaffWelfare welfare = new StaffWelfare();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		//初始化日期为null
+		Date begindate,endDate=null;
+		if(request.getParameter("begintime")!=null && !"".equals(request.getParameter("begintime"))){
+		     begindate = format.parse(request.getParameter("begintime") + " 00:00:00 ");
+		     welfare.setWelfareBegin(begindate);
+		}
+		if(request.getParameter("endtime")!=null && !"".equals(request.getParameter("endtime"))){
+			 endDate = format.parse(request.getParameter("endtime") + " 23:59:59 ");
+			 welfare.setWelfareEnd(endDate);
+		}
+		
+		if(request.getParameter("staffname")!=null && !"".equals(request.getParameter("staffname").trim())){
+			welfare.setStaffName(request.getParameter("staffname"));
+		}
+		
+		if(request.getParameter("staffidentityid")!=null && !"".equals(request.getParameter("staffidentityid").trim())){
+			welfare.setStaffIdentityId(request.getParameter("staffidentityid"));
+		}
+		
+		if(request.getParameter("staffid")!=null && !"".equals(request.getParameter("staffid").trim())){
+			welfare.setStaffId(request.getParameter("staffid"));
+		}
+		
+		welfare.setRemark1(orgi);
+		ResponseData responseData=new ResponseData("/pages/manage/welFare/welFareList");
+		responseData.setDataList(getoptCount(welfare, data.getP(), data.getPs()));
+		ModelAndView view = request(responseData, orgi , data);
+		view.addObject("condtion", welfare);
+		view.addObject("begintime",request.getParameter("begintime"));
+		view.addObject("endtime",request.getParameter("endtime"));
+		view.addObject("staffname",request.getParameter("staffname"));
+		view.addObject("staffid",request.getParameter("staffid"));
+		view.addObject("staffidentityid",request.getParameter("staffidentityid"));
+		return view ; 
+	
+	}
+	
+	//查询条件
+	public List<?> getoptCount(StaffWelfare welfare, int p, int ps) {
+		DetachedCriteria dr=DetachedCriteria.forClass(StaffWelfare.class);
+		Criterion temp = Restrictions.eq("remark1",welfare.getRemark1());
+		Order order=Order.desc("createTime");
+		SimpleExpression staffname=Restrictions.eq("staffName",welfare.getStaffName());
+		if(welfare.getStaffName()!=null&&!"".equals(welfare.getStaffName()))
+		{
+			temp=Restrictions.and(staffname,temp);
+		}
+		SimpleExpression staffidentityid=Restrictions.eq("staffIdentityId", welfare.getStaffIdentityId());
+		if(welfare.getStaffIdentityId()!=null&&!"".equals(welfare.getStaffIdentityId()))
+		{
+			temp=Restrictions.and(staffidentityid,temp);
+		}
+		SimpleExpression staffid=Restrictions.eq("staffId",welfare.getStaffId());
+		if(welfare.getStaffId()!=null&&!"".equals(welfare.getStaffId()))
+		{
+			temp=Restrictions.and(staffid,temp);
+		}
+		
+		SimpleExpression begintime=Restrictions.ge("createTime", welfare.getWelfareBegin());
+		SimpleExpression endtime=Restrictions.le("createTime", welfare.getWelfareEnd());
+		Criterion bothtime=Restrictions.between("createTime", welfare.getWelfareBegin(), welfare.getWelfareEnd());
+		
+		if(welfare.getWelfareBegin()!=null&&welfare.getWelfareEnd()==null){
+			temp=Restrictions.and(temp, begintime);
+		}else if(welfare.getWelfareBegin()==null&&welfare.getWelfareEnd()!=null){
+			temp=Restrictions.and(temp, endtime);
+		}else if(welfare.getWelfareBegin()!=null&&welfare.getWelfareEnd()!=null){
+			temp=Restrictions.and(temp, bothtime);
+		}
+		
+		
+		dr.add(temp);
+		dr.addOrder(order);
+		return RivuDataContext.getService().findPageByCriteria(dr,ps,p);
+	}
+	
+	@RequestMapping(value = "/export")
+	public void acceptNewsExcelOutDownLoad(HttpServletRequest request ,HttpServletResponse response,@PathVariable String orgi,@ModelAttribute("data") RequestData data) throws IOException, WriteException, ParseException{
+		StaffWelfare welfare = new StaffWelfare();
+    	String identityid = request.getParameter("staffidentityid");
+    	String id = request.getParameter("staffid");
+    	String name = request.getParameter("staffname");
+    	
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    	Date begin = null;
+    	Date end = null; 
+    	if(request.getParameter("begintime")!=null && !"".equals(request.getParameter("begintime"))){
+    		begin = sdf.parse(request.getParameter("begintime"));
+    	}
+    	if(request.getParameter("endtime")!=null && !"".equals(request.getParameter("endtime"))){
+    		end = sdf.parse(request.getParameter("endtime"));
+    	}
+    	DetachedCriteria dr=DetachedCriteria.forClass(StaffWelfare.class);
+		Criterion temp = Restrictions.eq("remark1",orgi);
+		SimpleExpression staffname=Restrictions.eq("staffName",name);
+		if(name!=null&&!"".equals(name))
+		{
+			temp=Restrictions.and(staffname,temp);
+		}
+		SimpleExpression staffidentityid=Restrictions.eq("staffIdentityId", identityid);
+		if(identityid!=null&&!"".equals(identityid))
+		{
+			temp=Restrictions.and(staffidentityid,temp);
+		}
+		SimpleExpression staffid=Restrictions.eq("staffId",id);
+		if(id!=null&&!"".equals(id))
+		{
+			temp=Restrictions.and(staffid,temp);
+		}
+		
+		SimpleExpression begintime=Restrictions.ge("createTime", begin);
+		SimpleExpression endtime=Restrictions.le("createTime", end);
+		Criterion bothtime=Restrictions.between("createTime", begin, end);
+		
+		if(begin!=null&&end==null){
+			temp=Restrictions.and(temp, begintime);
+		}else if(begin==null&&end!=null){
+			temp=Restrictions.and(temp, endtime);
+		}else if(begin!=null&&end!=null){
+			temp=Restrictions.and(temp, bothtime);
+		}
+		
+		dr.add(temp);
+		List<StaffWelfare> staffList = super.getService().findAllByCriteria(dr);
+		
+		response.reset();
+		//response.setContentType("application/vnd.ms-excel");
+		response.setHeader("Content-Disposition", "attachment; filename=kaimenhongli.xls");  
+		OutputStream os = response.getOutputStream(); 
+		
+		WritableWorkbook wrokBook = Workbook.createWorkbook(os);
+		WritableCellFormat cellFormat = new WritableCellFormat();
+		cellFormat.setVerticalAlignment(VerticalAlignment.CENTRE);
+		cellFormat.setAlignment(Alignment.CENTRE);
+		int totalSeets = (staffList.size()/65535)+1;
+		for(int i = 0; i < totalSeets; i++){
+			WritableSheet sheet = wrokBook.createSheet(("sheet"+i),i);
+			Label lab = new Label(0, 0, "主键", cellFormat);
+			sheet.setColumnView(0,0);
+			sheet.addCell(lab);
+			lab = new Label(1, 0, "微信号", cellFormat);
+			sheet.setColumnView(1,0);
+			sheet.addCell(lab);
+			lab = new Label(2, 0, "微信昵称", cellFormat);
+			sheet.setColumnView(2,20);
+			sheet.addCell(lab);
+			lab = new Label(3, 0, "机构", cellFormat);
+			sheet.setColumnView(3,20);
+			sheet.addCell(lab);
+			lab = new Label(4, 0, "分支机构", cellFormat);
+			sheet.setColumnView(4,20);
+			sheet.addCell(lab);
+			lab = new Label(5, 0, "员工工号", cellFormat);
+			sheet.setColumnView(5,0);
+			sheet.addCell(lab);
+			lab = new Label(6, 0, "备用字段", cellFormat);
+			sheet.setColumnView(6,0);
+			sheet.addCell(lab);
+			lab = new Label(7, 0, "姓名", cellFormat);
+			sheet.setColumnView(7,20);
+			sheet.addCell(lab);
+			lab = new Label(8, 0, "身份证号", cellFormat);
+			sheet.setColumnView(8,20);
+			sheet.addCell(lab);
+			lab = new Label(9, 0, "登记时间", cellFormat);
+			sheet.setColumnView(9,20);
+			sheet.addCell(lab);
+			lab = new Label(10, 0, "备用字段", cellFormat);
+			sheet.setColumnView(10,0);
+			sheet.addCell(lab);
+			lab = new Label(11, 0, "备用字段", cellFormat);
+			sheet.setColumnView(11,0);
+			sheet.addCell(lab);
+			lab = new Label(12, 0, "备用字段", cellFormat);
+			sheet.setColumnView(12,0);
+			sheet.addCell(lab);
+			
+			int curRowNum = 1;
+			for(int k = i*65535; k < (i+1)*65535 && k < staffList.size();k++){
+				StaffWelfare staffwelfare = staffList.get(k);
+                String creatdate = sdf.format(staffwelfare.getCreateTime());
+				lab = new Label(0, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(1, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				String nickName = staffwelfare.getNickname();
+		    	if(nickName == null || "".equals(nickName)){
+		    		String apiusername = staffwelfare.getApiusername();
+		    		
+		    		List <WeiXinUser> weiXinUserList=super.getService().findAllByCriteria(DetachedCriteria.forClass(WeiXinUser.class).add(Restrictions.and(Restrictions.eq("orgi", orgi),Restrictions.eq("apiusername", apiusername))));
+		    		if(weiXinUserList !=null && weiXinUserList.size()>0){
+		    			nickName = weiXinUserList.get(0).getNickName();
+		    		}
+		    	}
+				lab = new Label(2, curRowNum, nickName, cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(3, curRowNum, "remark2", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(4, curRowNum, "remark3", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(5, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(6, curRowNum, "remark1", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(7, curRowNum, staffwelfare.getStaffName(), cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(8, curRowNum, staffwelfare.getStaffIdentityId(), cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(9, curRowNum, creatdate, cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(10, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(11, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				lab = new Label(12, curRowNum, "", cellFormat);
+				sheet.addCell(lab);
+				curRowNum++;
+			}
+		}
+		wrokBook.write();
+		wrokBook.close();
+		os.close();
+	}
+	
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/deleteData")
+	public void deleteData(HttpServletRequest request ,HttpServletResponse response,@PathVariable String orgi,@ModelAttribute("data") RequestData data) throws IOException, WriteException, ParseException{
+		List<StaffWelfare> staffwleFareList = getService().findAllByCriteria(DetachedCriteria.forClass(StaffWelfare.class).add(Restrictions.eq("remark1", orgi)));
+		if(staffwleFareList !=null && staffwleFareList.size()>0){
+			for(StaffWelfare staff : staffwleFareList){
+				super.getService().deleteIObject(staff);
+			}
+		}
+		
+	}
+	@RequestMapping(value = "/deleteIndex")
+	public ModelAndView deleteIndex(HttpServletRequest request ,HttpServletResponse response,@PathVariable String orgi,@ModelAttribute("data") RequestData data) throws IOException, WriteException, ParseException{
+		ModelAndView view  = new ModelAndView("/pages/manage/welFare/delwelFareList");
+		return view; 
+	}
+}

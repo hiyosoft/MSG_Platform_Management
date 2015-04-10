@@ -1,0 +1,72 @@
+package com.rivues.web.model;
+
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.GenericGenerator;
+
+@Entity
+@Table(name = "rivu_kwcheckcategory")
+@org.hibernate.annotations.Proxy(lazy = false)
+public class KWCheckCategory implements java.io.Serializable{
+	private static final long serialVersionUID = 1L;
+	private String id ;
+	private String orgi ;
+	private String name ;
+	private String code ;
+	private String type ;
+	private String clazz;
+	private Date createtime ;
+	@Id
+	@Column(length = 32)
+	@GeneratedValue(generator = "system-uuid")
+	@GenericGenerator(name = "system-uuid", strategy = "uuid")
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getCode() {
+		return code;
+	}
+	public void setCode(String code) {
+		this.code = code;
+	}
+	public String getOrgi() {
+		return orgi;
+	}
+	public void setOrgi(String orgi) {
+		this.orgi = orgi;
+	}
+	public Date getCreatetime() {
+		return createtime;
+	}
+	public void setCreatetime(Date createtime) {
+		this.createtime = createtime;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	public String getClazz() {
+		return clazz;
+	}
+	public void setClazz(String clazz) {
+		this.clazz = clazz;
+	}
+	
+}

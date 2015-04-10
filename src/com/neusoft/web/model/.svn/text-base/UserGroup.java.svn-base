@@ -1,0 +1,66 @@
+package com.rivues.web.model;
+
+import java.io.Serializable;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.GenericGenerator;
+
+@Entity
+@Table(name = "rivu_weixinuser_group")
+@org.hibernate.annotations.Proxy(lazy = false)
+public class UserGroup implements Serializable{
+	
+		/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+		private String id;
+		private String orgi; //租户标识
+		private String groupName; 
+		private String groupType;
+		private String code;
+		
+	
+
+		@Id
+		@Column(length = 32)
+		@GeneratedValue(generator = "system-uuid")
+		@GenericGenerator(name = "system-uuid", strategy = "uuid")
+		public String getId() {
+			return id;
+		}
+		public void setId(String id) {
+			this.id = id;
+		}
+		
+		public String getCode() {
+			return code;
+		}
+		public void setCode(String code) {
+			this.code = code;
+		}
+		public String getGroupName() {
+			return groupName;
+		}
+		public void setGroupName(String groupName) {
+			this.groupName = groupName;
+		}
+		public String getGroupType() {
+			return groupType;
+		}
+		public void setGroupType(String groupType) {
+			this.groupType = groupType;
+		}
+		public String getOrgi() {
+			return orgi;
+		}
+		public void setOrgi(String orgi) {
+			this.orgi = orgi;
+		}
+	
+}

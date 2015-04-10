@@ -1,0 +1,216 @@
+package com.neusoft.util.rpc.client;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
+import org.hibernate.criterion.DetachedCriteria;
+import org.jfree.util.Log;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.neusoft.core.EapDataContext;
+import com.neusoft.core.api.APIContext;
+import com.neusoft.core.channel.DataMessage;
+import com.neusoft.core.channel.SNSUser;
+import com.neusoft.util.rpc.message.Message;
+import com.neusoft.util.rpc.message.MessageService;
+import com.neusoft.util.rpc.message.SystemMessage;
+import com.neusoft.web.model.SNSAccount;
+
+/**
+ * Client that connects to the server and handles the sending and receiving of
+ * message objects. Will also attempt to reconnect if the server disappears.
+ * 
+ */
+public class Client implements MessageService.Iface {
+
+	private static final Logger LOGGER = Logger.getLogger(Client.class);
+	private final ConnectionStatusMonitor connectionMonitor;
+	private final MessageSender sender;
+	private final MessageReceiver receiver;
+	private String id = String.valueOf(System.currentTimeMillis());
+	private final String channel;
+	private boolean connected = false ;
+	private Object data;
+	private MessageService.Iface client;
+	private long lastPingTime = System.currentTimeMillis();
+
+	private final TTransport transport;
+	private final TProtocol protocol;
+	private String server;
+	private String host ;
+	private int port;
+
+	private final List<MessageListener> listeners;
+
+	public Client(final String server, final int port,final String host, MessageService.Iface messageHandler) {
+		this.channel = id;
+		this.server = server;
+		this.port = port;
+		this.host = host ;
+		this.transport = new TSocket(server, port);
+		this.protocol = new TBinaryProtocol(transport);
+
+		this.connectionMonitor = new ConnectionStatusMonitor(transport);
+		connectionMonitor.addListener(new ConnectionStatusListener() {
+			
+			@Override
+			public void connectionLost() {
+//				close();
+//				for(Client client : APIContext.getRpcServers()){
+//					if(client.getHost().equals(host)){
+//						APIContext.getRpcServers().remove(client) ;
+//						APIContext.getWaitConnectionServers().add(client) ;
+//						break ;
+//					}
+//				}
+				LOGGER.info("系统提示：链接已丢失，服务器信息"+host+" 最后通信时间:"+lastPingTime + "，可用服务器："+APIContext.getRpcServers().size() +" 等待链接服务器:"+APIContext.getWaitConnectionServers().size()) ;
+			}
+			
+			@Override
+			public void connectionEstablished() {
+				connected = true ;
+				for(Client client : APIContext.getWaitConnectionServers()){
+					if(client.getHost().equals(host)){
+						APIContext.getWaitConnectionServers().remove(client) ;
+						APIContext.getRpcServers().add(client) ;
+						break ;
+					}
+				}
+				LOGGER.info("系统提示：链接已建立，服务器信息"+host+" 同步数据，可用服务器："+APIContext.getRpcServers().size() +" 等待链接服务器:"+APIContext.getWaitConnectionServers().size()) ;
+				syncSystemData(server , port , channel );
+			}
+		});
+		this.sender = new MessageSender(protocol, connectionMonitor);
+		this.receiver = new MessageReceiver(protocol, messageHandler, connectionMonitor);
+		messageHandler.setMessageSender(this.sender);
+		messageHandler.setClient(this);
+		new Thread(receiver).start();
+		/**
+		 * 加入到等待队列
+		 */
+		APIContext.getWaitConnectionServers().add(this) ;
+		/**
+		 * 尝试创建链接，如果成功，则出发监听器
+		 */
+		this.connectionMonitor.tryOpen();
+
+		this.listeners = new ArrayList<MessageListener>();
+	}
+
+	/**
+   * 
+   */
+	public void close() {
+		this.transport.close();
+		this.sender.setRunning(false) ;
+		this.receiver.setRunning(false) ;
+	}
+
+	public void addListener(MessageListener listener) {
+		listeners.add(listener);
+	}
+
+	public void sendMessageToServer(Message msg) {
+		sender.send(msg);
+	}
+
+	@Override
+	public void process(Message msg) throws TException {
+		for (MessageListener listener : listeners) {
+			listener.messageReceived(msg);
+		}
+	}
+
+	/**
+	 * 
+	 * @param name
+	 * @param port
+	 * @param channel
+	 */
+	@SuppressWarnings("unchecked")
+	private synchronized static void syncSystemData(final String name, final int port, final String channel){
+		if (APIContext.getRpcServers().size() > 0) {
+			APIContext.sendSNSAccountToGW(EapDataContext
+							.getService().findAllByCriteria(DetachedCriteria.forClass(SNSAccount.class))) ;
+			EapDataContext.getRuntimeData().setRpcServer(APIContext.getRpcServers()) ;
+		}
+	}
+	@Override
+	public void setMessageSender(Object sender) {
+		this.data = sender;
+	}
+
+	@Override
+	public Object getMessageSender() {
+		return data;
+	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	@Override
+	public void setClient(MessageService.Iface client) {
+		this.client = client;
+	}
+
+	public long getLastPingTime() {
+		return lastPingTime;
+	}
+
+	public void setLastPingTime(long lastPingTime) {
+		this.lastPingTime = lastPingTime;
+	}
+
+	public String getServer() {
+		return server;
+	}
+
+	public void setServer(String server) {
+		this.server = server;
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public String getChannel() {
+		return channel;
+	}
+
+	public ConnectionStatusMonitor getConnectionMonitor() {
+		return connectionMonitor;
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public boolean isConnected() {
+		return connected;
+	}
+
+	public void setConnected(boolean connected) {
+		this.connected = connected;
+	}
+}

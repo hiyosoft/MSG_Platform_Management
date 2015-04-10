@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/sinosig/!svn/ver/975/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client
+END
+MessageHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/svn/sinosig/!svn/ver/831/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/MessageHandler.java
+END
+MessageSender.java
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/sinosig/!svn/ver/975/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/MessageSender.java
+END
+ConnectionRequiredRunnable.java
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/sinosig/!svn/ver/650/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/ConnectionRequiredRunnable.java
+END
+ConnectionStatusListener.java
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/sinosig/!svn/ver/650/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/ConnectionStatusListener.java
+END
+MessageReceiver.java
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/sinosig/!svn/ver/650/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/MessageReceiver.java
+END
+MessageListener.java
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/sinosig/!svn/ver/673/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/MessageListener.java
+END
+ConnectionStatusMonitor.java
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/sinosig/!svn/ver/650/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/ConnectionStatusMonitor.java
+END
+Client.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/975/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/rpc/client/Client.java
+END

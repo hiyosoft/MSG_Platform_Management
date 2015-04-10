@@ -1,0 +1,88 @@
+package com.rivues.core.plugin;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Random;
+
+import org.apache.commons.beanutils.BeanUtils;
+
+import com.rivues.core.RivuDataContext;
+import com.rivues.core.SmcRivuDataContext;
+import com.rivues.core.api.APIContext;
+import com.rivues.core.channel.Channel;
+import com.rivues.core.channel.DataMessage;
+import com.rivues.core.channel.WeiXin;
+import com.rivues.util.EapTools;
+import com.rivues.util.queue.AgentUser;
+import com.rivues.web.model.Instruction;
+
+public class ErWeiMaTipPlugin extends Plugin{
+	/**
+	 * 扫描带参数的二维码，除了返回指令本身，还返回二维码参数对应的IMR,即可返回多个IRM
+	 * @param user
+	 * @param orgi
+	 * @return
+	 */
+	public String getMessage(Instruction instruct ,AgentUser user , final String orgi , Channel channelx){
+		String eventkey=((WeiXin)channelx).getBcardUserName();
+		if(eventkey!=null && eventkey.indexOf("qrscene_")>=0){
+			eventkey=eventkey.replaceAll("qrscene_", "");
+		}
+		if(eventkey!=null && RivuDataContext.getInstruct(orgi)!=null && RivuDataContext.getInstruct(orgi).containsKey(eventkey)){
+			Instruction evins = (RivuDataContext.getInstruct(orgi).get(eventkey)).get(0);
+			final String resulMsg=super.getChannelMessage(evins , evins.getMemo(), user, orgi, channelx);
+			final String userid=channelx.getUserid();
+			Thread td=new Thread(new Runnable() {
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					
+					if(resulMsg!=null){
+						Channel wx=new WeiXin();
+						wx.setTouser(userid) ;
+						wx.setUserid(userid) ;
+						wx.setText(resulMsg);
+						wx.setReplytype(RivuDataContext.ReplyType.MANUALLY.toString()) ;
+						wx.setMessagetype(RivuDataContext.MessageType.TEXT.toString()) ;
+						wx.setOrgi(orgi) ;
+						DataMessage dataMessage = new DataMessage(RivuDataContext.ChannelTypeEnum.WEIXIN.toString() , wx , orgi , wx.getUserid()) ;
+						try {
+							Thread.currentThread().sleep(2000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						APIContext.sendMessageToUser(dataMessage) ;
+						APIContext.saveMessage(dataMessage) ;
+					}
+				}
+			});
+			try {
+				td.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			td.start();
+		}
+		return super.getChannelMessage(instruct , instruct.getMemo(), user, orgi, channelx);
+	}
+
+	@Override
+	public String getCode() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void initVirInstruct(String orgi , Instruction instruct){
+		// TODO Auto-generated method stub
+		
+	}
+}

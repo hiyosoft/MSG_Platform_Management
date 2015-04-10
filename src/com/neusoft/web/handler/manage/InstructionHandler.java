@@ -1,0 +1,660 @@
+package com.neusoft.web.handler.manage;
+
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.neusoft.core.EapDataContext;
+import com.neusoft.core.EapSmcDataContext;
+import com.neusoft.core.api.APIContext;
+import com.neusoft.core.channel.DataMessage;
+import com.neusoft.core.channel.WeiXin;
+import com.neusoft.util.rpc.message.Message;
+import com.neusoft.util.rpc.message.SystemMessage;
+import com.neusoft.util.store.EapTools;
+import com.neusoft.web.handler.Handler;
+import com.neusoft.web.handler.RequestData;
+import com.neusoft.web.handler.ResponseData;
+import com.neusoft.web.model.ExtensionPoints;
+import com.neusoft.web.model.Instruction;
+import com.neusoft.web.model.Material;
+import com.neusoft.web.model.SNSAccount;
+import com.neusoft.web.model.SearchResultTemplet;
+
+import freemarker.template.TemplateException;
+
+@Controller
+@SessionAttributes
+@RequestMapping(value = "/{orgi}/ins")
+public class InstructionHandler  extends Handler{
+	
+	@RequestMapping(value = "/sysins")
+	public ModelAndView tablelist(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData rspData = new ResponseData("/pages/manage/instruct/sysins" , super.getService().findPageByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.SYSTEM.toString())).addOrder(Order.desc("code")),20,1),data) ;
+		rspData.setValueList(EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) ;
+		ModelAndView view = request(rspData, orgi , data) ; 
+	 	view.addObject("buscate", super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.BUSINESS.toString())))) ;
+		List<Instruction> descmenus=new ArrayList<Instruction>();
+		List<Instruction> yxmenu=new ArrayList<Instruction>();
+		List<Instruction> menus=super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).addOrder(Order.asc("scope")));
+		List<Instruction> yx=super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.YXMENU.toString())).addOrder(Order.asc("scope")));
+		descmenus=getMenus(menus,descmenus,orgi,EapDataContext.InstructionType.EVENTMENU.toString());
+		yxmenu=getMenus(yx,yxmenu,orgi,EapDataContext.InstructionType.YXMENU.toString());
+		view.addObject("eventmenu", descmenus) ;
+		view.addObject("yxmenu",yxmenu);
+		view.addObject("type", EapDataContext.InstructionType.SYSTEM.toString()) ;
+		view.addObject("parent", "0") ;
+		return view ;
+	}
+	
+	private  List<Instruction> getMenus(List<Instruction> menus,List<Instruction> ins,String orgi,String type){
+		
+		Map<String,Integer> instScopeMap=new HashMap<String, Integer>();
+		for (Instruction inst : menus) {
+			if(!instScopeMap.containsKey(inst.getParent())){
+				instScopeMap.put(inst.getParent(), 1);
+			}
+			Integer scopeIndex=instScopeMap.get(inst.getParent());
+			inst.setScope(scopeIndex.toString());
+			super.getService().updateIObject(inst);
+			instScopeMap.put(inst.getParent(), ++scopeIndex);
+			ins.add(inst);
+			List<Instruction> instList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", inst.getId())).add(Restrictions.isNull("scope")).add(Restrictions.eq("type", type)));
+			Integer scopeSque = 1;
+			if(instList !=null || instList.size()>0){
+				for(Instruction instN : instList){
+					instN.setScope(scopeSque.toString());
+					scopeSque++;
+					super.getService().updateIObject(instN);
+				}
+			}
+		}
+		return ins;
+	}
+	
+	//重复了上面
+	@RequestMapping(value = "/sysinsLeft")
+	public ModelAndView sysinsLeft(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ResponseData rspData = new ResponseData("/pages/manage/instruct/sysinsLeft" , super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.SYSTEM.toString())))) ;
+		rspData.setValueList(EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) ;
+		ModelAndView view = request(rspData, orgi , data) ; 
+		view.addObject("buscate", super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.BUSINESS.toString())))) ;
+		view.addObject("eventmenu", super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).addOrder(Order.asc("scope")))) ;
+		view.addObject("yxmenu", super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.YXMENU.toString())).addOrder(Order.asc("scope")))) ;
+		view.addObject("type", EapDataContext.InstructionType.SYSTEM.toString()) ;
+		view.addObject("parent", "0") ;
+		return view ;
+	}
+	
+	//向上排序
+	@RequestMapping(value = "/orderUp/{id}")
+	public ModelAndView orderUp(HttpServletRequest request ,@PathVariable String id ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		
+		String scopeNew = "";
+		String scopeOld = "";
+		String parentId = request.getParameter("parent");
+		String sysinsIndex = request.getParameter("rowId");
+		String type = request.getParameter("type");
+		Instruction inst = new Instruction();
+		List<Instruction> instList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("id", id))) ;
+		if(instList.size()>0){
+			inst = instList.get(0);
+			String scope = inst.getScope();
+			if(scope !=null && !"".equals(scope))
+			{
+				if(scope=="1" || "1".equals(scope))
+				{
+	
+				}
+				else
+				{
+					scopeNew = (Integer.parseInt(scope)-1)+"";
+					scopeOld = scope;					
+					List<Instruction> insListN = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent",parentId)).add(Restrictions.eq("type", type)).add(Restrictions.eq("scope", scopeNew)));
+					
+					if(insListN.size()>0){
+						Instruction itct = insListN.get(0);
+						itct.setScope(scopeOld);
+						super.getService().updateIObject(itct);
+						inst.setScope(scopeNew);
+						super.getService().updateIObject(inst);
+					}
+					
+				}
+			}
+			else
+			{
+				List<Instruction> insListN = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent",parentId)).add(Restrictions.eq("type", type)).add(Restrictions.isNull("scope")));
+				
+				for(int i=0;i<insListN.size();i++)
+				{
+					Instruction instr = insListN.get(i);
+					
+					instr.setScope(String.valueOf(i));
+					
+					super.getService().updateIObject(instr);
+				}
+			}
+		}
+		System.out.println("=======================================================向上排序");
+		
+		String types = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+		String parent = request.getParameter("parent")!=null ? request.getParameter("parent") : "0" ;
+		EapDataContext.initInstruct(orgi);
+		return request(new ResponseData("redirect:/{orgi}/ins/subins/"+parent+".html?type="+types+"&parent="+parent), orgi , data) ; 
+		}
+	
+	//向下排序
+	@RequestMapping(value = "/orderDown/{id}")
+	public ModelAndView orderDown(HttpServletRequest request ,@PathVariable String id ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		String scopeNew = "";
+		String scopeOld = ""; 
+		String parentId = request.getParameter("parent");
+		String type = request.getParameter("type");
+		Instruction inst = new Instruction();
+		List<Instruction> instList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("id", id))) ;
+		
+		if(instList.size()>0)
+		{
+			inst = instList.get(0);
+			String scope = inst.getScope();
+			if(scope !=null && !"".equals(scope))
+			{
+				List<Instruction> instrList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", parentId)).add(Restrictions.eq("type", type)));
+				if(instrList!=null && instrList.size()>0)
+				{
+					String instrSize = instrList.size()+"";
+					if(scope== instrSize|| instrSize.equals(scope))
+					{
+						
+					}
+					else
+					{
+						scopeNew = (Integer.parseInt(scope)+1)+"";
+						scopeOld = scope;							
+						List<Instruction> insListN = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", parentId)).add(Restrictions.eq("type", type)).add(Restrictions.eq("scope", scopeNew)));
+						
+						if(insListN.size()>0)
+						{
+							Instruction itct = insListN.get(0);
+							itct.setScope(scopeOld);
+							super.getService().updateIObject(itct);
+							inst.setScope(scopeNew);
+							super.getService().updateIObject(inst);
+						}
+					}
+				}
+			}
+			else
+			{
+				List<Instruction> insListN = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent",parentId)).add(Restrictions.eq("type", type)).add(Restrictions.isNull("scope")));
+				
+				for(int i=0;i<insListN.size();i++)
+				{
+					Instruction instr = insListN.get(i);
+					
+					instr.setScope(String.valueOf(i));
+					
+					super.getService().updateIObject(instr);
+				}
+			}
+		}
+		System.out.println("=======================================================向下排序");
+		String types = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+		String parent = request.getParameter("parent")!=null ? request.getParameter("parent") : "0" ;
+		EapDataContext.initInstruct(orgi);
+		return request(new ResponseData("redirect:/{orgi}/ins/subins/"+parent+".html?type="+types+"&parent="+parent), orgi , data) ; 
+		
+		}
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/subinsRight/{id}")
+	public ModelAndView subinsRight(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String id, @ModelAttribute("data") RequestData data) {
+		Instruction instruction = null ;
+		List<Instruction> insList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi))) ;
+		for(Instruction ins : insList){
+			if(ins.getId().equals(id)){
+				instruction = ins ;
+				break ;
+			}
+		}
+		List<Instruction> parentList = new ArrayList<Instruction>();
+		Instruction parentins = instruction ;
+		parentList.add(parentins) ;
+		while(parentins!=null && parentins.getParent()!=null  && !"0".equals(parentins.getParent())){
+			for(Instruction ins : insList){
+				if(ins.getId().equals(parentins.getParent())){
+					parentins = ins ;
+					parentList.add(0,parentins) ;
+					break ;
+				}
+			}
+		}
+		String type = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+		ResponseData rspData = new ResponseData("/pages/manage/instruct/inslist" , super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", type)).add(Restrictions.eq("parent", id)).addOrder(Order.asc("scope")))) ;
+		rspData.setValueList(EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) ;
+		rspData.setValues(new HashMap()) ;
+		rspData.getValues().put("parent",parentList) ;
+		rspData.setData(instruction) ;
+		ModelAndView view = request(rspData, orgi ,data) ; 
+		view.addObject("type", request.getParameter("type")) ;
+		view.addObject("parent", id) ;
+		return view ;
+	}
+	
+	//******************
+	@RequestMapping(value = "/publish/{type}")
+	public ModelAndView publish(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String type, @ModelAttribute("data") RequestData data) throws IOException, TemplateException {
+		System.out.println(type);
+		List<Instruction> eventMenuList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", type)).addOrder(Order.asc("scope"))) ;
+		List<Instruction> publishMenuList = new ArrayList<Instruction>();
+		for(Instruction ins : eventMenuList){
+			if("0".equals(ins.getParent())){
+				publishMenuList.add(ins) ;
+				ins.setEventMenuList(new ArrayList<Instruction>()) ;
+				for(Instruction subins : eventMenuList){
+					if(subins.getParent().equals(ins.getId())){
+						ins.getEventMenuList().add(subins) ;
+ 					}
+				}
+			}
+		}
+		SearchResultTemplet templet = null ;
+		for(SearchResultTemplet srt : EapSmcDataContext.getSearchResultTempletList(EapDataContext.ChannelTypeEnum.WEIXIN.toString())){
+			if(srt.getCode().equals("eventmenu")){
+				templet = srt ;
+				break;
+			}
+		}
+		
+		if(templet!=null){
+			Map<String , Object> values = new HashMap<String , Object>();
+			values.put("data", publishMenuList);
+			String text = EapTools.getTemplet(templet, values);
+			System.out.println(text);
+			List<SNSAccount> accountList = super.getService().findAllByCriteria(DetachedCriteria.forClass(SNSAccount.class).add(Restrictions.eq("orgi", orgi)));
+			WeiXin weixin = new WeiXin();
+			for(SNSAccount account : accountList){
+				if(account.isDefaultaccount()){
+					System.out.println(type.equals("eventmenu"));
+					if(type.equals("eventmenu")){
+						weixin.setChannel("weixin") ;
+					}else{
+						weixin.setChannel(EapDataContext.ChannelTypeEnum.YIXIN.toString());
+					}
+				}
+			}
+			DataMessage dataMessage = new DataMessage(null, weixin, orgi, null) ;
+			dataMessage.getChannel().setText(text) ;
+			System.out.println("渠道发布企业菜单=================="+weixin.getChannel());
+//			APIContext.getRpcServer().sendMessageToServer(
+//					new Message(RivuDataContext.HANDLER, JSON.toJSONString(new SystemMessage(RivuDataContext.SystemRPComman.EVENTMENU.toString(), dataMessage),SerializerFeature.WriteClassName)));
+	
+			APIContext.createMenu(new Message(EapDataContext.HANDLER, JSON.toJSONString(new SystemMessage(EapDataContext.SystemRPComman.EVENTMENU.toString(), dataMessage),SerializerFeature.WriteClassName)), orgi);
+		}
+	
+		
+		
+		if(type.equals("eventmenu")){
+			return request(new ResponseData("redirect:/{orgi}/ins/inslist/eventmenu.html"), orgi , data) ; 
+		}else{
+			return request(new ResponseData("redirect:/{orgi}/ins/inslist/yxmenu.html"), orgi , data) ; 
+		}
+	}
+	
+
+	@RequestMapping(value = "/add")
+    public ModelAndView add(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ModelAndView view =  request(new ResponseData("/pages/manage/instruct/add" , "/pages/include/iframeindex" , data.getP() , EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) , orgi , data) ; 
+		view.addObject("parent", request.getParameter("parent")) ;
+		view.addObject("type", request.getParameter("type")) ;
+		view.addObject("adapter", EapSmcDataContext.getUserTempletList("adapter" , orgi)) ;
+		return view ;
+    }
+	
+	@RequestMapping(value = "/batadd")
+    public ModelAndView batadd(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ModelAndView view = request(new ResponseData("/pages/manage/instruct/batadd" , "/pages/include/iframeindex" , data.getP() , EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) , orgi , data) ; 
+		view.addObject("parent", request.getParameter("parent")) ;
+		view.addObject("type", request.getParameter("type")) ;
+		view.addObject("adapter", EapSmcDataContext.getUserTempletList("adapter" , orgi)) ;
+		return view ;
+    }
+	
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/addo")
+    public ModelAndView adddo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") Instruction data) {
+		String parentId = request.getParameter("parent") ;
+		Map<String , List<Instruction>> insMap = EapDataContext.getInstruct(orgi) ;
+		if(data.getType().equals("yxmenu")|| data.getType().equals("eventmenu") && !parentId.equals("0")){
+			List<Instruction> insList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", data.getType())).add(Restrictions.eq("parent", parentId)));
+			 if(insList!=null && insList.size()>4){
+				 return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "子菜单不能超过五个" , true , null), orgi, null) ;
+			 }
+		}
+		if(data.getType().equals("yxmenu")|| data.getType().equals("eventmenu") && parentId.equals("0")){
+			List<Instruction> insList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", data.getType())).add(Restrictions.eq("parent", parentId)));
+			 if(insList!=null && insList.size()>2){
+				 return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "菜单不能超过三个" , true , null), orgi, null) ;
+			 }
+		}
+		if(insMap!=null){
+			List<Instruction> insLists = insMap.get(data.getCode()) ;
+			if(insLists!=null&& insLists.size()>0){
+				return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "代码 "+data.getCode()+" 已存在，请重新输入" , true , null), orgi, null) ;
+			}
+		}
+		data.setCreatetime(new Date());
+		data.setUsername(super.getUser(request).getUsername());
+		data.setUserid(super.getUser(request).getId()) ;
+		data.setOrgi(orgi);
+		data.setStatus("1");
+		if("0".equals(parentId) || parentId=="0"){
+			List<Instruction> rstResult = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).addOrder(Order.asc("scope"))) ;
+			if(rstResult != null ){
+			    String scope = (rstResult.size()+1)+"";
+				data.setScope(scope);
+			}else{
+				data.setScope("1");
+			}
+		}else{
+			List<Instruction> rstResult = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", parentId)).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).addOrder(Order.asc("scope"))) ;
+			if(rstResult != null ){
+			    String scope = (rstResult.size()+1)+"";
+				data.setScope(scope);
+			}else{
+				data.setScope("1");
+			}
+		}
+		List<ExtensionPoints> exentList = super.getService().findPageByCriteria(DetachedCriteria.forClass(ExtensionPoints.class).add(Restrictions.eq("dscription", "1")));
+		if(exentList!=null && exentList.size()>0){
+			ExtensionPoints extens = exentList.get(0);
+			String exId = extens.getId();
+			if(exId.equals(data.getPlugin()) || exId==data.getPlugin()){
+				List<Material> materList = super.getService().findPageByCriteria(DetachedCriteria.forClass(Material.class).add(Restrictions.eq("id", data.getMemo())));
+				if(materList !=null && materList.size()>0){
+					Material mater = materList.get(0);
+					data.setInterfacetype(mater.getTitle());
+					
+				}
+			}
+		}
+		data.setParent(data.getParent()==null ? "" : data.getParent());
+		ResponseData rspData = new ResponseData("/pages/manage/instruct/sysins" , super.getService().findPageByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", (data.getParent()==null ? "" : data.getParent()))).add(Restrictions.eq("type", EapDataContext.InstructionType.SYSTEM.toString())).addOrder(Order.desc("code")),20,1)) ;
+		
+//		data.setType(RivuDataContext.InstructionType.SYSTEM.toString());
+		super.getService().saveIObject(data);
+		
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		EapDataContext.initInstruct(orgi);
+		return request(responseData, orgi ,null) ; 
+		 
+    }
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/bataddo")
+    public ModelAndView bataddo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") Instruction data) {
+		String namecodes = request.getParameter("namecodes") ;
+		String memo = data.getMemo() ;
+		Map<String , List<Instruction>> insMap = EapDataContext.getInstruct(orgi) ;
+		String valid=null;
+		if(insMap!=null){
+			int i=0;
+			for(String namecode : namecodes.split("[\r\n]")){
+				i++;
+				String[] value = namecode.split("[ ,，]") ;
+				if(value.length == 2&&value[0].trim()!=null&&value[1].trim()!=null&&!value[0].trim().equals("")&&!value[1].trim().equals("")){
+					String temcode=value[0].trim();
+					List<Instruction> insLists = insMap.get(temcode) ;
+					if(insLists!=null&& insLists.size()>0){
+						return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "第"+i+"行代码 "+temcode+" 已存在，请重新输入" , true , null), orgi, null) ;
+					}
+				}else{
+					return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "第"+i+"行指令输入的格式不正确，请重新输入" , true , null), orgi, null) ;
+				}
+			}
+			
+		}
+		
+		for(String namecode : namecodes.split("[\r\n]")){
+			String[] value = namecode.split("[ ,，]") ;
+			if(value.length == 2){
+				data.setName(value[1].trim()) ;
+				data.setCode(value[0].trim()) ;
+			}
+			data.setCreatetime(new Date());
+			data.setUsername(super.getUser(request).getUsername());
+			data.setUserid(super.getUser(request).getId()) ;
+			data.setOrgi(orgi);
+			data.setStatus("1") ;
+			data.setParent(data.getParent()==null ? "" : data.getParent()) ;
+			data.setMemo(memo.replaceAll("\\{name\\}", data.getName()).replaceAll("\\{code\\}", data.getCode())) ;
+			List<Instruction> insLists = insMap.get(data.getCode()) ;
+			if(insLists==null||("null").equals(insLists)){
+				super.getService().saveIObject(data);
+				EapDataContext.initInstruct(orgi);
+			}
+		}
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		return request(responseData, orgi ,null ) ; 
+		 
+    }
+	
+	@RequestMapping(value = "/inslist/{type}")
+	public ModelAndView inslist(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String type, @ModelAttribute("data") RequestData data) {
+		String parentid=request.getParameter("parent");
+		
+		if(parentid==null||parentid.equals("")){
+			parentid="0";
+		}
+		ResponseData rspData = new ResponseData("/pages/manage/instruct/inslist" , super.getService().findPageByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", type)).add(Restrictions.eq("parent", parentid)).addOrder(Order.desc("code")), data.getPs(), data.getP()), data) ;
+		rspData.setValueList(EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) ;
+		ModelAndView view = request(rspData, orgi ,data) ; 
+		view.addObject("type", type) ;
+		view.addObject("parent", request.getParameter("parent")) ;
+		return view ;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/subins/{id}")
+	public ModelAndView subins(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String id, @ModelAttribute("data") RequestData data) {
+		Instruction instruction = null ;
+		List<Instruction> insList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi))) ;
+		for(Instruction ins : insList){
+			if(ins.getId().equals(id)){
+				instruction = ins ;
+				break ;
+			}
+		}
+		List<Instruction> parentList = new ArrayList<Instruction>();
+		Instruction parentins = instruction ;
+		parentList.add(parentins) ;
+		while(parentins!=null && parentins.getParent()!=null  && !"0".equals(parentins.getParent())){
+			for(Instruction ins : insList){
+				if(ins.getId().equals(parentins.getParent())){
+					parentins = ins ;
+					parentList.add(0,parentins) ;
+					break ;
+				}
+			}
+		}
+		String type = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+		ResponseData rspData = null ;
+		if(type.equals("eventmenu") || type.equals("yxmenu")){
+			rspData= new ResponseData("/pages/manage/instruct/sysins" , super.getService().findPageByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", type)).add(Restrictions.eq("parent", id)).addOrder(Order.asc("scope")),20,1)) ;	
+		}else{
+			rspData = new ResponseData("/pages/manage/instruct/sysins" , super.getService().findPageByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("type", type)).add(Restrictions.eq("parent", id)).addOrder(Order.desc("code")),20,1)) ;
+		}
+		rspData.setValueList(EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) ;
+		rspData.setValues(new HashMap()) ;
+		rspData.getValues().put("parent",parentList) ;
+		rspData.setData(instruction) ;
+		ModelAndView view = request(rspData, orgi ,data) ; 
+		view.addObject("type", request.getParameter("type")) ;
+		view.addObject("parent", id) ;
+		return view ;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/edit/{id}")
+    public ModelAndView edit(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String id, @ModelAttribute("data") RequestData data) {
+		ResponseData responseData = new ResponseData("/pages/manage/instruct/edit" , "/pages/include/iframeindex" , data.getP() , EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString()));
+		Instruction ins = (Instruction) super.getService().getIObjectByPK(Instruction.class, id) ;
+		responseData.setData(ins );
+		ModelAndView view = request(responseData, orgi ,data) ; 
+		view.addObject("parent", request.getParameter("parent")) ;
+		view.addObject("type", request.getParameter("type")) ;
+		if(ins.getPlugin()!=null && ins.getPlugin().length()>0){
+			view.addObject("plugin", EapDataContext.getPlugin(ins.getPlugin())) ;
+		}
+		view.addObject("adapter", EapSmcDataContext.getUserTempletList("adapter" , orgi)) ;
+		view.addObject("material", super.getService().findAllByCriteria(DetachedCriteria.forClass(Material.class).add(Restrictions.eq("orgi", orgi)))) ;
+		
+		return view ;
+    }
+	
+	/**
+	 * 修改IMR
+	 * @param request
+	 * @param orgi
+	 * @param data
+	 * @return
+	 */
+	@RequestMapping(value = "/editdo")
+    public ModelAndView editdo(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") Instruction data) {
+		Map<String , List<Instruction>> insMap = EapDataContext.getInstruct(orgi) ;
+		if(insMap!=null){
+			List<Instruction> insLists = insMap.get(data.getCode()) ;
+			if(insLists!=null&& insLists.size()>0&&!insLists.get(0).getId().equals(data.getId())){
+				return request(new ResponseData("redirect://inslist"+data.getType()+".html" , "代码 "+data.getCode()+" 已存在，请重新输入" , true , null), orgi, null) ;
+			}
+		}
+		String memo = request.getParameter("memo");
+		if(memo !="" && !"".equals(memo)){
+			List<Material> materList = super.getService().findPageByCriteria(DetachedCriteria.forClass(Material.class).add(Restrictions.eq("id",memo)));
+			if(materList !=null && materList.size()>0){
+				Material mater = materList.get(0);
+				data.setInterfacetype(mater.getTitle());
+				
+			}
+		}
+		//data.setCreatetime(new Date());
+		data.setUsername(super.getUser(request).getUsername());
+		data.setUserid(super.getUser(request).getId()) ;
+		data.setOrgi(orgi);
+		data.setStatus("1") ;
+		data.setParent(data.getParent()==null ? "" : data.getParent()) ;
+//		data.setType(RivuDataContext.InstructionType.SYSTEM.toString());
+		super.getService().updateIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		EapDataContext.initInstruct(orgi);
+		return request(responseData, orgi , null) ; 
+    }
+	
+	@RequestMapping(value = "/rm/{id}")
+    public ModelAndView rm(HttpServletRequest request ,@PathVariable String orgi, @PathVariable String id,@ModelAttribute("data") RequestData data) {
+		String scope = "";
+		String parentId = request.getParameter("parent");
+		Instruction ins = new Instruction() ;
+		ins.setId(id);
+		List<Instruction> insList = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", id))) ;
+		if(insList.size()==0){
+			List<Instruction> instruc = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("id", id))) ;
+			if(instruc!=null && instruc.size()>0){
+				Instruction instr = instruc.get(0);
+				if(instr !=null){
+					scope = instr.getScope();
+					if("0".equals(parentId) || parentId =="0"){
+						List<Instruction> instruct = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", "0")).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).add(Restrictions.gt("scope", scope)));
+						if(instruct !=null && instruct.size()>0){
+							for(Instruction istr : instruct){
+								scope = (Integer.parseInt(istr.getScope())-1)+"";
+								istr.setScope(scope);
+								super.getService().updateIObject(istr);
+							}
+						}
+					}else{
+						List<Instruction> instruct = super.getService().findAllByCriteria(DetachedCriteria.forClass(Instruction.class).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("parent", parentId)).add(Restrictions.eq("type", EapDataContext.InstructionType.EVENTMENU.toString())).add(Restrictions.gt("scope", scope)));
+						if(instruct !=null && instruct.size()>0){
+							for(Instruction istr : instruct){
+								scope = (Integer.parseInt(istr.getScope())-1)+"";
+								istr.setScope(scope);
+								super.getService().updateIObject(istr);
+							}
+						}
+					}
+				}
+			}
+			
+			
+			super.getService().deleteIObject(ins) ;	
+			String type = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+			String parent = request.getParameter("parent")!=null ? request.getParameter("parent") : "0" ;
+			EapDataContext.initInstruct(orgi);
+			return request(new ResponseData("redirect:/{orgi}/ins/subins/"+parent+".html?type="+type+"&parent="+parent), orgi , data) ; 
+		}else{
+			String type = request.getParameter("type")!=null ? request.getParameter("type") : EapDataContext.InstructionType.SYSTEM.toString() ;
+			String parent = request.getParameter("parent")!=null ? request.getParameter("parent") : "0" ;
+			ResponseData responseData = new ResponseData("redirect:/{orgi}/ins/subins/"+parent+".html?type="+type+"&parent="+parent);
+			responseData.setError("有下级指令，请先删除下级指令后在删除该指令") ;
+			return request(responseData, orgi , data) ; 
+		}
+    }
+	
+	@RequestMapping(value = "/busadd")
+    public ModelAndView busadd(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") RequestData data) {
+		ModelAndView view = request(new ResponseData("/pages/manage/instruct/busadd" , "/pages/include/iframeindex" , data.getP() , EapDataContext.getPluginList(EapDataContext.PluginType.INSTRUCTION.toString())) , orgi , data) ;  
+		view.addObject("type", request.getParameter("type")!=null?request.getParameter("type"):EapDataContext.InstructionType.BUSINESS.toString()) ;
+		view.addObject("parent", "0") ;
+		return view ;
+    }
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/busaddo")
+    public ModelAndView busadd(HttpServletRequest request ,@PathVariable String orgi, @ModelAttribute("data") Instruction data) {
+		data.setCreatetime(new Date());
+		data.setUsername(super.getUser(request).getUsername());
+		data.setUserid(super.getUser(request).getId()) ;
+		data.setOrgi(orgi);
+		data.setStatus("1") ;
+		data.setParent(data.getParent()==null ? "" : data.getParent()) ;
+		data.setType(EapDataContext.InstructionType.BUSINESS.toString());
+		super.getService().saveIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success"  ) ;
+		EapDataContext.initInstruct(orgi);
+		return request(responseData, orgi , null) ; 
+		 
+    }
+	
+	@RequestMapping(value = "/plugin/{id}")
+    public ModelAndView plugin(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String id, @ModelAttribute("data") RequestData data) {
+		ModelAndView view =  request(new ResponseData("/pages/manage/instruct/plugin"  ), orgi , null)  ;
+		view.addObject("plugin", EapDataContext.getPlugin(id)) ;
+		view.addObject("material", super.getService().findAllByCriteria(DetachedCriteria.forClass(Material.class).add(Restrictions.eq("orgi", orgi)))) ;
+		return view; 
+		 
+    }
+	@RequestMapping(value = "/pluginadd/{id}")
+    public ModelAndView pluginadd(HttpServletRequest request ,@PathVariable String orgi,@PathVariable String id, @ModelAttribute("data") RequestData data) {
+		ModelAndView view =  request(new ResponseData("/pages/manage/instruct/pluginadd"  ), orgi , null)  ;
+		view.addObject("plugin", EapDataContext.getPlugin(id)) ;
+		view.addObject("material", super.getService().findAllByCriteria(DetachedCriteria.forClass(Material.class).add(Restrictions.eq("orgi", orgi)))) ;
+		return view; 
+		 
+    }
+}

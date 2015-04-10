@@ -1,0 +1,143 @@
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/sinosig/!svn/ver/931/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin
+END
+UserUnsubscribePlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/sinosig/!svn/ver/737/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/UserUnsubscribePlugin.java
+END
+TipNavMenuPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/627/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipNavMenuPlugin.java
+END
+SinosigZlpcSaveImagePlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/sinosig/!svn/ver/568/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/SinosigZlpcSaveImagePlugin.java
+END
+UserDisLinkInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/sinosig/!svn/ver/884/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/UserDisLinkInstructPlugin.java
+END
+YdgwValidUserPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/sinosig/!svn/ver/626/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/YdgwValidUserPlugin.java
+END
+TipCurrentInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipCurrentInstructPlugin.java
+END
+TipTempletMessagePlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipTempletMessagePlugin.java
+END
+InstructPluginInterface.java
+K 25
+svn:wc:ra_dav:version-url
+V 123
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/InstructPluginInterface.java
+END
+SinosigZlpcPostZipPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/sinosig/!svn/ver/568/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/SinosigZlpcPostZipPlugin.java
+END
+TipUserBindMessagePlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipUserBindMessagePlugin.java
+END
+TipNewsMessagePlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipNewsMessagePlugin.java
+END
+TransferAgentSkillInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/sinosig/!svn/ver/931/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TransferAgentSkillInstructPlugin.java
+END
+QiangPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/svn/sinosig/!svn/ver/647/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/QiangPlugin.java
+END
+TransferAgentInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/sinosig/!svn/ver/931/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TransferAgentInstructPlugin.java
+END
+TipSubInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipSubInstructPlugin.java
+END
+TipNotFoundInstructPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/sinosig/!svn/ver/527/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipNotFoundInstructPlugin.java
+END
+ErWeiMaTipPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/794/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/ErWeiMaTipPlugin.java
+END
+TipChooseAgentSkillPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TipChooseAgentSkillPlugin.java
+END
+TwoMinsTipPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/TwoMinsTipPlugin.java
+END
+SinosigZlpcValidCardPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/sinosig/!svn/ver/568/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/SinosigZlpcValidCardPlugin.java
+END
+CollectLocationPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/svn/sinosig/!svn/ver/281/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/CollectLocationPlugin.java
+END
+Plugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/sinosig/!svn/ver/737/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/Plugin.java
+END
+FourMinsTipPlugin.java
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/core/plugin/FourMinsTipPlugin.java
+END

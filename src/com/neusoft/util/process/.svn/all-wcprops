@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/sinosig/!svn/ver/665/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process
+END
+CarReportProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/svn/sinosig/!svn/ver/665/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/CarReportProcess.java
+END
+ReqeustProcessUtil.java
+K 25
+svn:wc:ra_dav:version-url
+V 119
+/svn/sinosig/!svn/ver/373/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/ReqeustProcessUtil.java
+END
+LocationProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/LocationProcess.java
+END
+LoginProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/sinosig/!svn/ver/373/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/LoginProcess.java
+END
+Signer.java
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/Signer.java
+END
+ChangeBaoJiaProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/ChangeBaoJiaProcess.java
+END
+InnerProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/InnerProcess.java
+END
+KeyPairer.java
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/KeyPairer.java
+END
+DefaultSigner.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/DefaultSigner.java
+END
+CheXianProcess.java
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/sinosig/!svn/ver/262/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/util/process/CheXianProcess.java
+END

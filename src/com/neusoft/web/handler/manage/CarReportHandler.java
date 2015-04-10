@@ -1,0 +1,29 @@
+package com.neusoft.web.handler.manage;
+
+
+import java.util.Date;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.neusoft.web.handler.Handler;
+import com.neusoft.web.handler.ResponseData;
+import com.neusoft.web.model.SinosigCarReport;
+@Controller
+@SessionAttributes
+@RequestMapping(value = "/{orgi}/carreport")
+public class CarReportHandler extends Handler{
+	@RequestMapping(value = "/carreport/adddo")
+	public ModelAndView carreportadddo(HttpServletRequest request, @PathVariable String orgi, @ModelAttribute("data") SinosigCarReport data) {
+		data.setOrgi(orgi);
+		super.getService().saveIObject(data);
+		ResponseData responseData = new ResponseData("/pages/public/success");
+		return request(responseData, orgi, null);
+	}
+}

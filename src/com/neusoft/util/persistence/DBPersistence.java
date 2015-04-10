@@ -1,0 +1,431 @@
+package com.neusoft.util.persistence;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+import javax.sql.DataSource;
+
+import org.eap.tools.CompressFile;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.SimpleExpression;
+import org.jsoup.Jsoup;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.core.io.ClassPathResource;
+
+import com.neusoft.core.EapDataContext;
+import com.neusoft.core.channel.Channel;
+import com.neusoft.core.channel.DataMessage;
+import com.neusoft.core.channel.SNSUser;
+import com.neusoft.core.channel.WeiXinUser;
+import com.neusoft.core.datasource.handler.DCriteriaPageSupport;
+import com.neusoft.tools.ZipData;
+import com.neusoft.util.queue.AgentUser;
+import com.neusoft.util.queue.ServiceQueue;
+import com.neusoft.util.store.EapTools;
+import com.neusoft.web.model.FilterHistoryModel;
+import com.sun.xml.messaging.saaj.util.ByteInputStream;
+import com.sun.xml.messaging.saaj.util.ByteOutputStream;
+
+public class DBPersistence implements Persistence{
+
+	@Override
+	public List<?> getMessagetList(AgentUser agentuser , int p , int ps) {
+		return agentuser!=null ? EapDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(agentuser.getChannel() , EapDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.eq("orgi", agentuser.getOrgi())).add(Restrictions.eq("contextid", agentuser.getContextid())).addOrder(Order.asc("createtime"))) : null ;
+	}
+	
+	public List<?> getMessagetListBySubType(String channel,String orgi , String subtype, int p, int ps){
+		return EapDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(channel , EapDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.eq("orgi", orgi)).add(Restrictions.eq("subtype", subtype)).add(Restrictions.eq("channel", channel)).addOrder(Order.desc("createtime")) , p , ps) ;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public SNSUser getSnsUserInfo(String userid, DataMessage dataMessage) {
+		List<SNSUser> snsUserList = EapDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(dataMessage.getChannel().getChannel() , EapDataContext.SNSBeanType.USER.toString())).add(Restrictions.eq("orgi", dataMessage.getOrgi())).add(Restrictions.or(Restrictions.eq("apiusername", userid) , Restrictions.eq("userid", dataMessage.getUserid()))))  ;
+		return snsUserList.size()>0 ? snsUserList.get(0) : null  ;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public String getLastInstruct(String userid, DataMessage dataMessage) {
+		/*原本应该修改ServiceQueue中的，查询上一次指令，不需要，故注释
+		 * List<Channel> msgList = RivuDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(RivuDataContext.getSNSUserBean(dataMessage.getChannel().getChannel() , RivuDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.isNotNull("instruct")).add(Restrictions.eq("replytype", RivuDataContext.ReplyType.AUTOMATIC.toString())).add(Restrictions.and(Restrictions.eq("orgi", dataMessage.getOrgi()) , Restrictions.eq("touser", dataMessage.getUserid()))).addOrder(Order.desc("createtime")),1,0)  ;
+		return msgList.size()>0 ? msgList.get(0).getInstruct() : null  ;*/
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public SNSUser getSnsUserInfo(String userid, String channel, String orgi) {
+		List<SNSUser> userList = EapDataContext.getService().findAllByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(channel, EapDataContext.SNSBeanType.USER.toString())).add(Restrictions.or(Restrictions.eq("apiusername", userid), Restrictions.eq("userid", userid)) ).add(Restrictions.eq("orgi", orgi)))  ;
+		return userList.size()>0 ? userList.get(0) : null  ;
+	}
+	
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Channel getMessage(String id , String channel , String orgi) {
+		// TODO Auto-generated method stub
+		Channel message = (Channel) EapDataContext.getService().getIObjectByPK(EapDataContext.getSNSUserBean(channel , EapDataContext.SNSBeanType.MESSAGE.toString()), id);
+		ZipData zipData = null ;
+		if(message.getBytedata()!=null && message.getBytedata().length == 1){
+			try {
+				zipData = CompressFile.unzip(message.getId()) ;
+				if(zipData!=null && zipData.getInput()!=null){
+					ByteOutputStream output = new ByteOutputStream();
+					int len = 0 ; 
+					byte[] data = new byte[1024] ;
+					while((len = zipData.getInput().read(data))>0){
+						output.write(data, 0, len) ;
+					}
+					message.setBytedata(output.getBytes()) ;
+					output.close();
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		if(message.getText()!=null && message.getText().length()>=200){
+			String textid = EapTools.md5((message.getId()+"_text"));
+			try {
+				
+				zipData = CompressFile.unzip(textid) ;
+				InputStream input = zipData.getInput() ;
+				if(input!=null){
+					int len = 0 ; 
+					byte[] data = new byte[1024] ;
+					StringBuffer strb = new StringBuffer();
+					while((len = input.read(data))>0){
+						strb.append(new String(data , 0 , len , "UTF-8")) ;
+	 				}
+					message.setText(strb.toString()) ;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}finally{
+				if(zipData!=null && zipData.getInput()!=null){
+					try {
+						zipData.getInput().close() ;
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		return message ;
+	}
+
+	@Override
+	public List<?> getsumByAgentOrUser(FilterHistoryModel filter, int p, int ps) {
+		DetachedCriteria dr=DetachedCriteria.forClass(AgentUser.class);
+		Criterion temp=Restrictions.eq("orgi",filter.getOrgi());
+		SimpleExpression agenno=Restrictions.like("agentno", "%"+filter.getAgentno()+"%");
+		SimpleExpression begintime=Restrictions.ge("logindate", filter.getBegintime());
+		SimpleExpression endtime=Restrictions.le("logindate", filter.getEndtime());
+		SimpleExpression channel=Restrictions.eq("channel", filter.getChannel());
+		Criterion bothtime=Restrictions.between("logindate", filter.getBegintime(), filter.getEndtime());
+		SimpleExpression userid=Restrictions.like("username", "%"+filter.getUserid()+"%");
+		Order order=Order.desc("logindate");
+		if("agent".equals(filter.getQuerytype())&&filter.getAgentno()!=null&&!"".equals(filter.getAgentno())){
+			temp=Restrictions.and(agenno, temp);
+		}else if(filter.getUserid()!=null&&!"".equals(filter.getUserid())){
+			temp=Restrictions.and(temp, userid);
+		}
+		if(filter.getBegintime()!=null&&filter.getEndtime()==null){
+			temp=Restrictions.and(temp, begintime);
+		}else if(filter.getBegintime()==null&&filter.getEndtime()!=null){
+			temp=Restrictions.and(temp, endtime);
+		}else if(filter.getBegintime()!=null&&filter.getEndtime()!=null){
+			temp=Restrictions.and(temp, bothtime);
+		}
+		if(filter.getChannel()!=null){
+			temp=Restrictions.and(temp, channel);
+		}
+////		if(filter.getUser()!=null && !"0".equals(filter.getUser().getUsertype())){
+//			temp=Restrictions.and(temp, Restrictions.eq("agentno", filter.getUser().getAgentno()));
+////		}
+		dr.add(temp);
+		dr.addOrder(order);
+		return EapDataContext.getService().findPageByCriteria(dr,ps,p);
+	}
+	
+	@SuppressWarnings({ "unchecked", "unused" })
+	public void saveUser(SNSUser user){
+		List<SNSUser> userList = EapDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(user.getChannel() , EapDataContext.SNSBeanType.USER.toString())).add(Restrictions.eq("apiusername", user.getApiusername())).add(Restrictions.eq("orgi", user.getOrgi())))  ;
+		SNSUser sn=null;
+		if(userList.size()>0){
+			sn=userList.get(0);
+		}
+		if(userList.size()==0){
+			EapDataContext.getService().saveIObject(user) ;
+		}else{
+			WeiXinUser temp=(WeiXinUser) user;
+			WeiXinUser desc=(WeiXinUser) sn;
+			//如果数据库用户的fackid与传过来的apiusername一样，或者昵称修改后
+			//高级接口后：如果数据库用户的fackid与传过来的apiusername不一样，或者昵称修改后
+			if( desc!=null && temp!=null && desc.getCrmid()!=null && desc.getNickName()!=null && desc.getApiusername()!=null && desc.getFakeId()!=null && ((!desc.getApiusername().equals(desc.getFakeId())) || (!desc.getNickName().equals(temp.getNickName())) || (!desc.getCrmid().equals(temp.getCrmid())))){
+				temp.setId(desc.getId());
+				/*desc.setNickName(temp.getNickName()) ;
+				desc.setFakeId(temp.getFakeId()) ;*/
+				EapDataContext.getService().updateIObject(temp) ;
+			}
+			//更新完善从用户同步的信息
+			if(desc!=null && temp!=null  &&  desc.getApiusername()==null && temp.getNickName()!=null && (temp.getNickName().equals(desc.getNickName()))){
+				temp.setId(desc.getId());
+				EapDataContext.getService().updateIObject(temp) ;
+			}
+		}
+	}
+	/**
+	 * 
+	 * @param message
+	 */
+	@SuppressWarnings("unchecked")
+	public void saveMessage(DataMessage message){
+		byte[] data = message.getChannel().getBytedata() ;
+		message.getChannel().setBytedata(new byte[1]) ;
+		String text = message.getChannel().getText() ;
+		boolean processtext = false ;
+		//在text为null的情况下，报错，在多租户的情况下出现
+		if(text!=null){
+			if(text.length()>200){
+				message.getChannel().setText(Jsoup.parse(text.substring(0,200)).text()) ;
+				processtext = true ;
+			}
+		}else{
+			message.getChannel().setText("客服已中断!欢迎下次咨询！");
+			//processtext=true;
+			processtext=false;
+		}
+
+		//WeiXin weixin = (WeiXin) message.getChannel() ;
+		EapDataContext.getService().saveIObject(message.getChannel()) ;
+		/*高级接口，不需要验证消息是否重复，该查询很消耗时间
+		 * List<WeiXin> userList = RivuDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(RivuDataContext.getSNSUserBean(message.getChannel().getChannel() , RivuDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.eq("msgid", weixin.getMsgid())).add(Restrictions.eq("orgi", weixin.getOrgi())))  ;
+		if(userList.size()==0){
+			
+		}else{
+			SNSUser snsUser = weixin.getSnsuser() ;
+			weixin = userList.get(0) ;
+			weixin.setSnsuser(snsUser) ;
+			message.setChannel(weixin) ;
+		}*/
+		if(processtext){
+			String textid = EapTools.md5((message.getChannel().getId()+"_text"));
+			try {
+				CompressFile.zip(new ByteInputStream(text.getBytes("UTF-8"), text.getBytes("UTF-8").length), textid, textid) ;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		if(data!=null){
+			try {
+				data = convert2Mp3(data);
+				System.out.println("-----------------------------------------------" + data + "-->" + message.getChannel().getId());
+				CompressFile.zip(new ByteInputStream(data, data.length), message.getChannel().getId(), message.getChannel().getId()) ;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private boolean runShell(String amr,String mp3){
+		try {  
+           // String shpath=RivuDataContext.DATA_DIR+File.separatorChar+"ffmpeg/ffmpeg -i "+amr +" "+mp3;  
+			String shpath=System.getProperty("user.dir")+"/bin/ffmpeg/ffmpeg -i "+amr +" "+mp3;  
+            System.out.println("=============shpath==============="+shpath);
+            Process ps = Runtime.getRuntime().exec(shpath);  
+            ps.waitFor();  
+  
+            BufferedReader br = new BufferedReader(new InputStreamReader(ps.getInputStream()));  
+            StringBuffer sb = new StringBuffer();  
+            String line;  
+            while ((line = br.readLine()) != null) {  
+                sb.append(line).append("\n");  
+            }  
+            String result = sb.toString();  
+            System.out.println(result);  
+         
+        }catch (Exception e) {  
+            e.printStackTrace();  
+            return false;
+        }  
+		return true;
+	}
+	
+	/**
+	 * add by huqi 将amr二进制流转换为mp3形式的二进制流
+	 * @param data
+	 * @return
+	 * @throws IOException
+	 */
+	private byte[] convert2Mp3(byte[] data) throws IOException{
+		byte[] respData = data;
+		try { 
+			//1 生成临时amr文件
+			File tmpDataDir = new File(System.getProperty("user.dir")+File.separatorChar+"TEMP"+File.separator);
+			if(!tmpDataDir.exists()){
+				tmpDataDir.mkdir();
+			}
+			
+			BufferedOutputStream bos = null;
+			long nanotime = System.nanoTime();
+			File amrFile = new File(tmpDataDir.getAbsolutePath()+File.separator+nanotime+".amr");
+			bos = new BufferedOutputStream(new FileOutputStream(amrFile));
+			byte[] buffer = new byte[1024 * 8];
+			int read;
+			ByteArrayInputStream bin = new ByteArrayInputStream(data);
+			while ((read = bin.read(buffer)) > -1) {
+				bos.write(buffer, 0, read);
+			}
+			bos.close();
+			bin.close();
+		 
+			
+			//转换为mp3格式
+			File mp3File = new File(tmpDataDir.getAbsolutePath()+File.separator+nanotime+".mp3");
+			runShell(amrFile.getAbsolutePath(), mp3File.getAbsolutePath());
+			/*
+			AudioAttributes audio = new AudioAttributes();  
+	        Encoder encoder = new Encoder();  
+	        audio.setCodec("libmp3lame");
+	        EncodingAttributes attrs = new EncodingAttributes();  
+	        attrs.setFormat("mp3");  
+	        attrs.setAudioAttributes(audio);  
+	        try{
+	        	encoder.encode(amrFile, mp3File, attrs);  
+	        }catch(Exception ce){
+	        	ce.printStackTrace();
+	        }
+	        */
+	        //读取MP3字节流
+	        if(mp3File.exists()){
+	    		ByteArrayOutputStream out = new ByteArrayOutputStream();
+	    		buffer=  new byte[1024 * 8];
+				read = 0;
+				BufferedInputStream bs = new BufferedInputStream(new FileInputStream(mp3File));
+				while ((read = bs.read(buffer)) > -1) {
+					out.write(buffer, 0, read);
+				}
+				respData = out.toByteArray();
+				bs.close();
+				out.close();
+				//删除临时文件
+		    	//mp3File.delete();
+	        }
+	        //删除临时文件
+			//amrFile.delete();
+        } catch (Exception e) {  
+        	e.printStackTrace();
+        }
+		return respData;
+	}
+
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<?> getMsgMonitor(FilterHistoryModel filter, int ps, int p) {
+		if(filter.getEndtime()==null||filter.getBegintime()==null){
+			Class a=EapDataContext.getSNSUserBean(filter.getChannel() , EapDataContext.SNSBeanType.MESSAGE.toString());
+			return EapDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(filter.getChannel() , EapDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.eq("orgi", filter.getOrgi())).addOrder(Order.desc("createtime")),ps,p)  ;
+		}
+		
+		return  EapDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(filter.getChannel() , EapDataContext.SNSBeanType.MESSAGE.toString())).add(Restrictions.eq("orgi", filter.getOrgi())).add(Restrictions.between("createtime", filter.getBegintime(),filter.getEndtime())).addOrder(Order.desc("createtime")),ps,p)  ;
+	}
+	public List<?> getMsgMonitor(String orgi,String channel) {
+		List list=new ArrayList();
+		Collection cs=ServiceQueue.getUserQueue()==null?null:ServiceQueue.getUserQueue().values();
+		if(cs!=null){
+			List tems= Arrays.asList(cs.toArray());
+			for (Object object : tems) {
+				AgentUser au=(AgentUser) object;
+				if(au.getChannel()!=null&&au.getChannel().equals(channel)){
+					list.add(au);
+				}
+			}
+		}
+		return new DCriteriaPageSupport(list);
+		
+	}
+	
+	/**
+	 * 
+	 * @author 林招远
+	 * 
+	 *         从spring配置文件中获得数据库connection
+	 * 
+	 */
+		private DataSource dataSource;
+
+		public void setDataSource(DataSource dataSource) {
+			this.dataSource = dataSource;
+		}
+
+		static Connection connection = null;
+
+		public static Connection getconnection() {
+			BeanDefinitionRegistry reg = new DefaultListableBeanFactory();
+			XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(reg);
+			reader.loadBeanDefinitions(new ClassPathResource(
+					"applicationContext.xml"));
+			BeanFactory bf = (BeanFactory) reg;
+			DBPersistence dataBean = (DBPersistence) bf.getBean("dataBean");
+			dataBean.getcc();
+			return connection;
+		}
+
+		public void getcc() {
+			try {
+				connection = dataSource.getConnection();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		public SNSUser getSnsUserInfoByUsername(String uername, String channel,
+				String orgi) {
+			List<SNSUser> userList = EapDataContext.getService().findPageByCriteria(DetachedCriteria.forClass(EapDataContext.getSNSUserBean(channel, EapDataContext.SNSBeanType.USER.toString())).add(Restrictions.eq("apiusername", uername)).add(Restrictions.eq("orgi", orgi)),1,0)  ;
+			return userList.size()>0 ? userList.get(0) : null  ;
+		}
+
+		@Override
+		public void updateUser(SNSUser user) {
+			EapDataContext.getService().updateIObject(user) ;
+		}
+
+		@Override
+		public void updateMessage(Channel channel) {
+			EapDataContext.getService().updateIObject(channel) ;
+		}
+		
+		@Override
+		public void rmMessage(Channel channel) {
+			EapDataContext.getService().deleteIObject(channel) ;
+		}
+
+}

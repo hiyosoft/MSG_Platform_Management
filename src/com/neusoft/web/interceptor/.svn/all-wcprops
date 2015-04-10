@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/interceptor
+END
+ErrorInterceptorHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/interceptor/ErrorInterceptorHandler.java
+END
+UserInterceptorHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/interceptor/UserInterceptorHandler.java
+END
+ExceptionHandler.java
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/sinosig/!svn/ver/191/sinosig_update/SMC_Update/SINOSIG_SMC1108/src/com/rivues/web/interceptor/ExceptionHandler.java
+END
